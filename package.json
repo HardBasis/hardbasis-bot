@@ -1,0 +1,35 @@
+{
+  "name": "hardbasis-bot",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Reference API client + continuous soak bot for the HardBasis testnet. Built outside-in from the public docs.",
+  "license": "MIT",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "bin": {
+    "hardbasis-bot": "src/index.ts"
+  },
+  "scripts": {
+    "start": "tsx src/index.ts",
+    "smoke": "tsx src/index.ts --once",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "fetch-spec": "node scripts/fetch-spec.mjs",
+    "check-no-keys": "bash scripts/check-no-keys.sh",
+    "ci": "pnpm run check-no-keys && pnpm run typecheck && pnpm run test"
+  },
+  "dependencies": {
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "@types/ws": "^8.5.13",
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  },
+  "packageManager": "pnpm@10.34.4"
+}

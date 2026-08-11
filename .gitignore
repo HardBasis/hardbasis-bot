@@ -1,0 +1,20 @@
+# Secrets & runtime state — NEVER commit. The bot self-bootstraps its own
+# credentials into state/ on first run; the repo ships .env.example only.
+.env
+.env.*
+!.env.example
+state/
+logs/
+*.state.json
+
+# Node
+node_modules/
+dist/
+*.tsbuildinfo
+npm-debug.log*
+pnpm-debug.log*
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/

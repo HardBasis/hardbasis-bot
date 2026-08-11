@@ -1,0 +1,5371 @@
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "HardBasis Public API",
+    "version": "1.0.0",
+    "description": "Generated from the gateway's Zod contracts (PAPI-4). Money crosses the wire as decimal STRINGS — see `x-hardbasis-unit`; never parse a `…Msat`/`…Q8`/`…Q9`/`…TsMs`/`…contracts` field as a JSON number.",
+    "contact": {
+      "name": "HardBasis",
+      "url": "https://docs.hardbasis.com"
+    },
+    "license": {
+      "name": "Testnet — terms in preparation with counsel",
+      "url": "https://docs.hardbasis.com/legal"
+    },
+    "termsOfService": "https://docs.hardbasis.com/legal"
+  },
+  "servers": [
+    {
+      "url": "https://testnet.hardbasis.com",
+      "description": "testnet"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "apiKey": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "x-api-key"
+      }
+    },
+    "schemas": {
+      "ErrorCode": {
+        "type": "string",
+        "enum": [
+          "validation",
+          "unauthorized",
+          "insufficient_scope",
+          "compliance_refused",
+          "session_limit",
+          "referral_forbidden",
+          "not_found",
+          "idempotency_key_reused",
+          "conflict",
+          "confirmation_required",
+          "rate_limited",
+          "feature_unavailable",
+          "deposits_halted",
+          "unavailable",
+          "insufficient_balance",
+          "insufficient_margin",
+          "position_limit",
+          "oi_cap",
+          "reduce_only",
+          "market_halted",
+          "oracle_stale",
+          "body_too_large"
+        ]
+      },
+      "AccountResponse": {
+        "type": "object",
+        "properties": {
+          "accountId": {
+            "type": "string"
+          },
+          "userId": {
+            "type": "string"
+          },
+          "railAddress": {
+            "type": "string"
+          },
+          "autoSweepThresholdMsat": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^-?\\d+$",
+                "x-hardbasis-unit": "msat"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "freeMsat": {
+            "type": "string",
+            "pattern": "^-?\\d+$",
+            "x-hardbasis-unit": "msat"
+          },
+          "reservedMsat": {
+            "type": "string",
+            "pattern": "^-?\\d+$",
+            "x-hardbasis-unit": "msat"
+          },
+          "depositFees": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string",
+                  "enum": [
+                    "spark",
+                    "l1",
+                    "lightning"
+                  ]
+                },
+                "description": {
+                  "type": "string"
+                },
+                "recommendedMinimumSats": {
+                  "type": "string",
+                  "pattern": "^-?\\d+$",
+                  "x-hardbasis-unit": "sats"
+                }
+              },
+              "required": [
+                "path",
+                "description"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "accountId",
+          "userId",
+          "railAddress",
+          "autoSweepThresholdMsat",
+          "freeMsat",
+          "reservedMsat",
+          "depositFees"
+        ],
+        "additionalProperties": false
+      },
+      "CancelAllAfterRequest": {
+        "type": "object",
+        "properties": {
+          "timeoutMs": {
+            "type": "string",
+            "pattern": "^-?\\d+$",
+            "x-hardbasis-unit": "ms"
+          }
+        },
+        "required": [
+          "timeoutMs"
+        ],
+        "additionalProperties": false
+      },
+      "CancelAllAfterResponse": {
+        "type": "object",
+        "properties": {
+          "armed": {
+            "type": "boolean"
+          },
+          "deadlineTsMs": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^-?\\d+$",
+                "x-hardbasis-unit": "ms"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "armed",
+          "deadlineTsMs"
+        ],
+        "additionalProperties": false
+      },
+      "CandlesResponse": {
+        "type": "object",
+        "properties": {
+          "interval": {
+            "type": "number",
+            "const": 60
+          },
+          "candles": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "tsMs": {
+                  "type": "string",
+                  "pattern": "^-?\\d+$",
+                  "x-hardbasis-unit": "ms"
+                },
+                "oQ8": {
+                  "type": "string",
+                  "pattern": "^-?\\d+$",
+                  "x-hardbasis-unit": "q8"
+                },
+                "hQ8": {
+                  "type": "string",
+                  "pattern": "^-?\\d+$",
+                  "x-hardbasis-unit": "q8"
+                },
+                "lQ8": {
+                  "type": "string",
+                  "pattern": "^-?\\d+$",
+                  "x-hardbasis-unit": "q8"
+                },
+                "cQ8": {
+                  "type": "string",
+                  "pattern": "^-?\\d+$",
+                  "x-hardbasis-unit": "q8"
+                },
+                "prints": {
+                  "type": "integer",
+                  "minimum": -9007199254740991,
+                  "maximum": 9007199254740991
+                }
+              },
+              "required": [
+                "tsMs",
+                "oQ8",
+                "hQ8",
+                "lQ8",
+                "cQ8",
+                "prints"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "interval",
+          "candles"
+        ],
+        "additionalProperties": false
+      },
+      "ConfirmationRequiredResponse": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "string",
+            "const": "confirmation_required"
+          },
+          "code": {
+            "type": "string",
+            "const": "confirmation_required"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "firstSeen": {
+            "type": "boolean",
+            "const": true
+          },
+          "confirmThresholdMsat": {
+            "type": "string",
+            "pattern": "^-?\\d+$",
+            "x-hardbasis-unit": "msat"
+          }
+        },
+        "required": [
+          "error",
+          "reason",
+          "firstSeen",
+          "confirmThresholdMsat"
+        ],
+        "additionalProperties": false
+      },
+      "DeploymentResponse": {
+        "type": "object",
+        "properties": {
+          "deployment": {
+            "type": "string",
+            "enum": [
+              "prod",
+              "testnet"
+            ]
+          }
+        },
+        "required": [
+          "deployment"
+        ],
+        "additionalProperties": false
+      },
+      "DepositInvoiceRequest": {
+        "type": "object",
+        "properties": {
+          "amountMsat": {
+            "type": "string",
+            "pattern": "^-?\\d+$",
+            "x-hardbasis-unit": "msat"
+          },
+          "expirySeconds": {
+            "type": "integer",
+            "exclusiveMinimum": 0,
+            "maximum": 9007199254740991
+          },
+          "memo": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "DepositInvoiceResponse": {
+        "type": "object",
+        "properties": {
+          "invoice": {
+            "type": "string"
+          },
+          "paymentRef": {
+            "type": "string"
+          },
+          "expiresAtMs": {
+            "type": "string",
+            "pattern": "^-?\\d+$",
+            "x-hardbasis-unit": "ms"
+          },
+          "depositFees": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "path": {
+                  "type": "string",
+                  "enum": [
+                    "spark",
+                    "l1",
+                    "lightning"
+                  ]
+                },
+                "description": {
+                  "type": "string"
+                },
+                "recommendedMinimumSats": {
+                  "type": "string",
+                  "pattern": "^-?\\d+$",
+                  "x-hardbasis-unit": "sats"
+                }
+              },
+              "required": [
+                "path",
+                "description"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "invoice",
+          "paymentRef",
+          "expiresAtMs",
+          "depositFees"
+        ],
+        "additionalProperties": false
+      },
+      "DepositsHistoryResponse": {
+        "type": "object",
+        "properties": {
+          "deposits": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "accountId": {
+                  "type": "string"
+                },
+                "amountMsat": {
+                  "type": "string",
+                  "pattern": "^-?\\d+$",
+                  "x-hardbasis-unit": "msat"
+                },
+                "feeMsat": {
+                  "type": "string",
+                  "pattern": "^-?\\d+$",
+                  "x-hardbasis-unit": "msat"
+                },
+                "railRef": {
+                  "type": "string"
+                },
+                "seq": {
+                  "type": "string",
+                  "pattern": "^-?\\d+$",
+                  "x-hardbasis-unit": "seq"
+                },
+                "tsMs": {
+                  "type": "string",
+                  "pattern": "^-?\\d+$",
+                  "x-hardbasis-unit": "ms"
+                }
+              },
+              "required": [
+                "accountId",
+                "amountMsat",
+                "feeMsat",
+                "railRef",
+                "seq",
+                "tsMs"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "nextBeforeSeq": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^-?\\d+$",
+                "x-hardbasis-unit": "seq"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "deposits",
+          "nextBeforeSeq"
+        ],
+        "additionalProperties": false
+      },
+      "FillsHistoryResponse": {
+        "type": "object",
+        "properties": {
+          "fills": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "orderId": {
+                  "type": "string"
+                },
+                "accountId": {
+                  "type": "string"
+                },
+                "marketId": {
+                  "type": "string"
+                },
+                "side": {
+                  "type": "string",
+                  "enum": [
+                    "buy",
+                    "sell"
+                  ]
+                },
+                "closedContracts": {
+                  "type": "string",
+                  "pattern": "^-?\\d+$",
+                  "x-hardbasis-unit": "contracts"
+                },
+                "openedContracts": {
+                  "type": "string",
+                  "pattern": "^-?\\d+$",
+                  "x-hardbasis-unit": "contracts"
+                },
+                "execPriceQ8": {
+                  "type": "string",
+                  "pattern": "^-?\\d+$",
+                  "x-hardbasis-unit": "q8"
+                },
+                "oracle": {
+                  "type": "object",
+                  "properties": {
+                    "midQ8": {
+                      "type": "string",
+                      "pattern": "^-?\\d+$",
+                      "x-hardbasis-unit": "q8"
+                    },
+                    "confQ9": {
+                      "type": "string",
+                      "pattern": "^-?\\d+$",
+                      "x-hardbasis-unit": "q9"
+                    },
+                    "tsMs": {
+                      "type": "string",
+                      "pattern": "^-?\\d+$",
+                      "x-hardbasis-unit": "ms"
+                    }
+                  },
+                  "required": [
+                    "midQ8",
+                    "confQ9",
+                    "tsMs"
+                  ],
+                  "additionalProperties": false
+                },
+                "spreadQ9": {
+                  "type": "string",
+                  "pattern": "^-?\\d+$",
+                  "x-hardbasis-unit": "q9"
+                },
+                "tradeNotionalMsat": {
+                  "type": "string",
+                  "pattern": "^-?\\d+$",
+                  "x-hardbasis-unit": "msat"
+                },
+                "feeMsat": {
+                  "type": "string",
+                  "pattern": "^-?\\d+$",
+                  "x-hardbasis-unit": "msat"
+                },
+                "impactMsat": {
+                  "type": "string",
+                  "pattern": "^-?\\d+$",
+                  "x-hardbasis-unit": "msat"
+                },
+                "rebateDivertedMsat": {
+                  "type": "string",
+                  "pattern": "^-?\\d+$",
+                  "x-hardbasis-unit": "msat"
+                },
+                "realizedPnlMsat": {
+                  "type": "string",
+                  "pattern": "^-?\\d+$",
+                  "x-hardbasis-unit": "msat"
+                },
+                "fundingSettledMsat": {
+                  "type": "string",
+                  "pattern": "^-?\\d+$",
+                  "x-hardbasis-unit": "msat"
+                },
+                "releasedMarginMsat": {
+                  "type": "string",
+                  "pattern": "^-?\\d+$",
+                  "x-hardbasis-unit": "msat"
+                },
+                "reservedMarginMsat": {
+                  "type": "string",
+                  "pattern": "^-?\\d+$",
+                  "x-hardbasis-unit": "msat"
+                },
+                "deficitMsat": {
+                  "type": "string",
+                  "pattern": "^-?\\d+$",
+                  "x-hardbasis-unit": "msat"
+                },
+                "referral": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "string"
+                        },
+                        "grossFeeMsat": {
+                          "type": "string",
+                          "pattern": "^-?\\d+$",
+                          "x-hardbasis-unit": "msat"
+                        },
+                        "discountMsat": {
+                          "type": "string",
+                          "pattern": "^-?\\d+$",
+                          "x-hardbasis-unit": "msat"
+                        },
+                        "rewardMsat": {
+                          "type": "string",
+                          "pattern": "^-?\\d+$",
+                          "x-hardbasis-unit": "msat"
+                        },
+                        "policyVersion": {
+                          "type": "string",
+                          "pattern": "^-?\\d+$",
+                          "x-hardbasis-unit": "int"
+                        }
+                      },
+                      "required": [
+                        "code",
+                        "grossFeeMsat",
+                        "discountMsat",
+                        "policyVersion"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "positionAfter": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "side": {
+                          "type": "string",
+                          "enum": [
+                            "long",
+                            "short"
+                          ]
+                        },
+                        "contracts": {
+                          "type": "string",
+                          "pattern": "^-?\\d+$",
+                          "x-hardbasis-unit": "contracts"
+                        },
+                        "entryPriceQ8": {
+                          "type": "string",
+                          "pattern": "^-?\\d+$",
+                          "x-hardbasis-unit": "q8"
+                        },
+                        "marginMsat": {
+                          "type": "string",
+                          "pattern": "^-?\\d+$",
+                          "x-hardbasis-unit": "msat"
+                        }
+                      },
+                      "required": [
+                        "side",
+                        "contracts",
+                        "entryPriceQ8",
+                        "marginMsat"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "seq": {
+                  "type": "string",
+                  "pattern": "^-?\\d+$",
+                  "x-hardbasis-unit": "seq"
+                },
+                "tsMs": {
+                  "type": "string",
+                  "pattern": "^-?\\d+$",
+                  "x-hardbasis-unit": "ms"
+                }
+              },
+              "required": [
+                "orderId",
+                "accountId",
+                "marketId",
+                "side",
+                "closedContracts",
+                "openedContracts",
+                "execPriceQ8",
+                "oracle",
+                "spreadQ9",
+                "tradeNotionalMsat",
+                "feeMsat",
+                "impactMsat",
+                "rebateDivertedMsat",
+                "realizedPnlMsat",
+                "fundingSettledMsat",
+                "releasedMarginMsat",
+                "reservedMarginMsat",
+                "deficitMsat",
+                "positionAfter",
+                "seq",
+                "tsMs"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "nextBeforeSeq": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^-?\\d+$",
+                "x-hardbasis-unit": "seq"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "fills",
+          "nextBeforeSeq"
+        ],
+        "additionalProperties": false
+      },
+      "FundingFlowsHistoryResponse": {
+        "type": "object",
+        "properties": {
+          "funding": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "seq": {
+                  "type": "string",
+                  "pattern": "^-?\\d+$",
+                  "x-hardbasis-unit": "seq"
+                },
+                "boundaryTsMs": {
+                  "type": "string",
+                  "pattern": "^-?\\d+$",
+                  "x-hardbasis-unit": "ms"
+                },
+                "marketId": {
+                  "type": "string"
+                },
+                "rateQ9": {
+                  "type": "string",
+                  "pattern": "^-?\\d+$",
+                  "x-hardbasis-unit": "q9"
+                },
+                "flowMsat": {
+                  "type": "string",
+                  "pattern": "^-?\\d+$",
+                  "x-hardbasis-unit": "msat"
+                },
+                "paidMsat": {
+                  "type": "string",
+                  "pattern": "^-?\\d+$",
+                  "x-hardbasis-unit": "msat"
+                },
+                "positionId": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "seq",
+                "boundaryTsMs",
+                "marketId",
+                "rateQ9",
+                "flowMsat",
+                "paidMsat",
+                "positionId"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "nextBeforeSeq": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^-?\\d+$",
+                "x-hardbasis-unit": "seq"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "funding",
+          "nextBeforeSeq"
+        ],
+        "additionalProperties": false
+      },
+      "FundingHistoryEntry": {
+        "type": "object",
+        "properties": {
+          "tsMs": {
+            "type": "string",
+            "pattern": "^-?\\d+$",
+            "x-hardbasis-unit": "ms"
+          },
+          "rateQ9": {
+            "type": "string",
+            "pattern": "^-?\\d+$",
+            "x-hardbasis-unit": "q9"
+          },
+          "skewQ9": {
+            "type": "string",
+            "pattern": "^-?\\d+$",
+            "x-hardbasis-unit": "q9"
+          }
+        },
+        "required": [
+          "tsMs",
+          "rateQ9",
+          "skewQ9"
+        ],
+        "additionalProperties": false
+      },
+      "HealthzResponse": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean"
+          },
+          "db": {
+            "type": "boolean"
+          },
+          "tsMs": {
+            "type": "string",
+            "pattern": "^-?\\d+$",
+            "x-hardbasis-unit": "ms"
+          }
+        },
+        "required": [
+          "ok",
+          "db",
+          "tsMs"
+        ],
+        "additionalProperties": false
+      },
+      "LimitsResponse": {
+        "type": "object",
+        "properties": {
+          "tier": {
+            "type": "string"
+          },
+          "budgets": {
+            "type": "object",
+            "propertyNames": {
+              "type": "string",
+              "enum": [
+                "read",
+                "order",
+                "withdraw"
+              ]
+            },
+            "additionalProperties": {
+              "type": "object",
+              "properties": {
+                "limitPerMin": {
+                  "type": "integer",
+                  "exclusiveMinimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "burst": {
+                  "type": "integer",
+                  "exclusiveMinimum": 0,
+                  "maximum": 9007199254740991
+                },
+                "remaining": {
+                  "type": "integer",
+                  "minimum": 0,
+                  "maximum": 9007199254740991
+                }
+              },
+              "required": [
+                "limitPerMin",
+                "burst",
+                "remaining"
+              ],
+              "additionalProperties": false
+            },
+            "required": [
+              "read",
+              "order",
+              "withdraw"
+            ]
+          }
+        },
+        "required": [
+          "tier",
+          "budgets"
+        ],
+        "additionalProperties": false
+      },
+      "MarketStats24hResponse": {
+        "type": "object",
+        "properties": {
+          "marketId": {
+            "type": "string"
+          },
+          "windowMs": {
+            "type": "string",
+            "pattern": "^-?\\d+$",
+            "x-hardbasis-unit": "ms"
+          },
+          "basis": {
+            "type": "string",
+            "const": "fills"
+          },
+          "fills": {
+            "type": "integer",
+            "minimum": -9007199254740991,
+            "maximum": 9007199254740991
+          },
+          "volumeContracts": {
+            "type": "string",
+            "pattern": "^-?\\d+$",
+            "x-hardbasis-unit": "contracts"
+          },
+          "hiQ8": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^-?\\d+$",
+                "x-hardbasis-unit": "q8"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "loQ8": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^-?\\d+$",
+                "x-hardbasis-unit": "q8"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "truncated": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "marketId",
+          "windowMs",
+          "basis",
+          "fills",
+          "volumeContracts",
+          "hiQ8",
+          "loQ8",
+          "truncated"
+        ],
+        "additionalProperties": false
+      },
+      "OrderCanceledResponse": {
+        "type": "object",
+        "properties": {
+          "orderId": {
+            "type": "string"
+          },
+          "canceled": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "orderId",
+          "canceled"
+        ],
+        "additionalProperties": false
+      },
+      "OrderCreatedResponse": {
+        "type": "object",
+        "properties": {
+          "orderId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "accepted",
+              "filled",
+              "canceled",
+              "rejected",
+              "resting",
+              "working"
+            ]
+          }
+        },
+        "required": [
+          "orderId",
+          "status"
+        ],
+        "additionalProperties": false
+      },
+      "OrderRequest": {
+        "type": "object",
+        "properties": {
+          "marketId": {
+            "type": "string"
+          },
+          "side": {
+            "type": "string",
+            "enum": [
+              "buy",
+              "sell"
+            ]
+          },
+          "type": {
+            "default": "market",
+            "type": "string",
+            "enum": [
+              "market",
+              "limit",
+              "stop_market",
+              "take_profit_market"
+            ]
+          },
+          "contracts": {
+            "type": "string",
+            "pattern": "^-?\\d+$",
+            "x-hardbasis-unit": "contracts"
+          },
+          "limitPriceQ8": {
+            "type": "string",
+            "pattern": "^-?\\d+$",
+            "x-hardbasis-unit": "q8"
+          },
+          "triggerPriceQ8": {
+            "type": "string",
+            "pattern": "^-?\\d+$",
+            "x-hardbasis-unit": "q8"
+          },
+          "maxSlippageQ9": {
+            "type": "string",
+            "pattern": "^-?\\d+$",
+            "x-hardbasis-unit": "q9"
+          },
+          "reduceOnly": {
+            "default": false,
+            "type": "boolean"
+          },
+          "trigger": {
+            "type": "object",
+            "properties": {
+              "kind": {
+                "type": "string",
+                "enum": [
+                  "entry",
+                  "stop",
+                  "take_profit"
+                ]
+              },
+              "level": {
+                "type": "string",
+                "pattern": "^-?\\d+$",
+                "x-hardbasis-unit": "q8"
+              }
+            },
+            "required": [
+              "kind",
+              "level"
+            ],
+            "additionalProperties": false
+          },
+          "bracket": {
+            "type": "object",
+            "properties": {
+              "entryKind": {
+                "type": "string",
+                "enum": [
+                  "market",
+                  "trigger"
+                ]
+              },
+              "entryLevel": {
+                "type": "string",
+                "pattern": "^-?\\d+$",
+                "x-hardbasis-unit": "q8"
+              },
+              "stopLevel": {
+                "type": "string",
+                "pattern": "^-?\\d+$",
+                "x-hardbasis-unit": "q8"
+              },
+              "takeProfitLevel": {
+                "type": "string",
+                "pattern": "^-?\\d+$",
+                "x-hardbasis-unit": "q8"
+              }
+            },
+            "required": [
+              "entryKind"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "marketId",
+          "side",
+          "type",
+          "contracts",
+          "reduceOnly"
+        ],
+        "additionalProperties": false
+      },
+      "OrderSummary": {
+        "type": "object",
+        "properties": {
+          "orderId": {
+            "type": "string"
+          },
+          "marketId": {
+            "type": "string"
+          },
+          "side": {
+            "type": "string",
+            "enum": [
+              "buy",
+              "sell"
+            ]
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "market",
+              "limit",
+              "stop_market",
+              "take_profit_market"
+            ]
+          },
+          "contracts": {
+            "type": "string",
+            "pattern": "^-?\\d+$",
+            "x-hardbasis-unit": "contracts"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "accepted",
+              "filled",
+              "canceled",
+              "rejected"
+            ]
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "orderId",
+          "marketId",
+          "side",
+          "type",
+          "contracts",
+          "status",
+          "reason"
+        ],
+        "additionalProperties": false
+      },
+      "OrdersPage": {
+        "type": "object",
+        "properties": {
+          "orders": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "orderId": {
+                  "type": "string"
+                },
+                "marketId": {
+                  "type": "string"
+                },
+                "side": {
+                  "type": "string",
+                  "enum": [
+                    "buy",
+                    "sell"
+                  ]
+                },
+                "type": {
+                  "type": "string",
+                  "enum": [
+                    "market",
+                    "limit",
+                    "stop_market",
+                    "take_profit_market"
+                  ]
+                },
+                "contracts": {
+                  "type": "string",
+                  "pattern": "^-?\\d+$",
+                  "x-hardbasis-unit": "contracts"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "accepted",
+                    "filled",
+                    "canceled",
+                    "rejected"
+                  ]
+                },
+                "reason": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "orderId",
+                "marketId",
+                "side",
+                "type",
+                "contracts",
+                "status",
+                "reason"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "nextBeforeSeq": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^-?\\d+$",
+                "x-hardbasis-unit": "seq"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "orders",
+          "nextBeforeSeq"
+        ],
+        "additionalProperties": false
+      },
+      "PorProofResponse": {
+        "type": "object",
+        "properties": {
+          "rootHash": {
+            "type": "string"
+          },
+          "totalMsat": {
+            "type": "string",
+            "pattern": "^-?\\d+$",
+            "x-hardbasis-unit": "msat"
+          },
+          "rootSaltHex": {
+            "type": "string"
+          },
+          "treeTsMs": {
+            "type": "string",
+            "pattern": "^-?\\d+$",
+            "x-hardbasis-unit": "ms"
+          },
+          "leaf": {
+            "type": "object",
+            "properties": {
+              "accountTag": {
+                "type": "string"
+              },
+              "balanceMsat": {
+                "type": "string",
+                "pattern": "^-?\\d+$",
+                "x-hardbasis-unit": "msat"
+              },
+              "index": {
+                "type": "integer",
+                "minimum": -9007199254740991,
+                "maximum": 9007199254740991
+              }
+            },
+            "required": [
+              "accountTag",
+              "balanceMsat",
+              "index"
+            ],
+            "additionalProperties": false
+          },
+          "path": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "siblingHash": {
+                  "type": "string"
+                },
+                "siblingSumMsat": {
+                  "type": "string",
+                  "pattern": "^-?\\d+$",
+                  "x-hardbasis-unit": "msat"
+                },
+                "siblingOnLeft": {
+                  "type": "boolean"
+                }
+              },
+              "required": [
+                "siblingHash",
+                "siblingSumMsat",
+                "siblingOnLeft"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "rootHash",
+          "totalMsat",
+          "rootSaltHex",
+          "treeTsMs",
+          "leaf",
+          "path"
+        ],
+        "additionalProperties": false
+      },
+      "Position": {
+        "type": "object",
+        "properties": {
+          "marketId": {
+            "type": "string"
+          },
+          "side": {
+            "type": "string",
+            "enum": [
+              "long",
+              "short"
+            ]
+          },
+          "contracts": {
+            "type": "string",
+            "pattern": "^-?\\d+$",
+            "x-hardbasis-unit": "contracts"
+          },
+          "entryPriceQ8": {
+            "type": "string",
+            "pattern": "^-?\\d+$",
+            "x-hardbasis-unit": "q8"
+          },
+          "marginMsat": {
+            "type": "string",
+            "pattern": "^-?\\d+$",
+            "x-hardbasis-unit": "msat"
+          },
+          "fundingClockTsMs": {
+            "type": "string",
+            "pattern": "^-?\\d+$",
+            "x-hardbasis-unit": "ms"
+          }
+        },
+        "required": [
+          "marketId",
+          "side",
+          "contracts",
+          "entryPriceQ8",
+          "marginMsat",
+          "fundingClockTsMs"
+        ],
+        "additionalProperties": false
+      },
+      "PromoterApplyRequest": {
+        "type": "object",
+        "properties": {
+          "displayName": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "channels": {
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "kind": {
+                  "type": "string"
+                },
+                "url": {
+                  "type": "string"
+                },
+                "audience": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "kind",
+                "url",
+                "audience"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "plan": {
+            "type": "string",
+            "minLength": 1
+          },
+          "jurisdictions": {
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "acceptedTermsVersion": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "displayName",
+          "channels",
+          "plan",
+          "jurisdictions",
+          "acceptedTermsVersion"
+        ],
+        "additionalProperties": false
+      },
+      "PromoterApplyResponse": {
+        "type": "object",
+        "properties": {
+          "promoterId": {
+            "type": "string"
+          },
+          "status": {
+            "type": "string",
+            "const": "applied"
+          }
+        },
+        "required": [
+          "promoterId",
+          "status"
+        ],
+        "additionalProperties": false
+      },
+      "PromoterCodeRequest": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 4,
+            "maxLength": 16
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 120
+          },
+          "kickbackQ9": {
+            "type": "string",
+            "pattern": "^-?\\d+$",
+            "x-hardbasis-unit": "q9"
+          }
+        },
+        "required": [
+          "code",
+          "label",
+          "kickbackQ9"
+        ],
+        "additionalProperties": false
+      },
+      "PublicMarket": {
+        "type": "object",
+        "properties": {
+          "marketId": {
+            "type": "string"
+          },
+          "underlying": {
+            "type": "string"
+          },
+          "contractType": {
+            "type": "string",
+            "enum": [
+              "inverse",
+              "quanto"
+            ]
+          },
+          "oracleFeedId": {
+            "type": "string"
+          },
+          "quantoMultiplierMsat": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^-?\\d+$",
+                "x-hardbasis-unit": "msat"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "live",
+              "reduce_only",
+              "halted"
+            ]
+          },
+          "tickSizeQ8": {
+            "type": "string",
+            "pattern": "^-?\\d+$",
+            "x-hardbasis-unit": "q8"
+          },
+          "priceDp": {
+            "type": "string",
+            "pattern": "^-?\\d+$",
+            "x-hardbasis-unit": "int"
+          },
+          "minOrderContracts": {
+            "type": "string",
+            "pattern": "^-?\\d+$",
+            "x-hardbasis-unit": "contracts"
+          },
+          "maxOrderContracts": {
+            "type": "string",
+            "pattern": "^-?\\d+$",
+            "x-hardbasis-unit": "contracts"
+          },
+          "takerFeeQ9": {
+            "type": "string",
+            "pattern": "^-?\\d+$",
+            "x-hardbasis-unit": "q9"
+          },
+          "maxLeverage": {
+            "type": "string",
+            "pattern": "^-?\\d+$",
+            "x-hardbasis-unit": "int"
+          },
+          "imRateQ9": {
+            "type": "string",
+            "pattern": "^-?\\d+$",
+            "x-hardbasis-unit": "q9"
+          },
+          "mmRateQ9": {
+            "type": "string",
+            "pattern": "^-?\\d+$",
+            "x-hardbasis-unit": "q9"
+          },
+          "baseSpreadQ9": {
+            "type": "string",
+            "pattern": "^-?\\d+$",
+            "x-hardbasis-unit": "q9"
+          },
+          "fundingRateHourlyQ9": {
+            "type": "string",
+            "pattern": "^-?\\d+$",
+            "x-hardbasis-unit": "q9"
+          },
+          "nextFundingTsMs": {
+            "type": "string",
+            "pattern": "^-?\\d+$",
+            "x-hardbasis-unit": "ms"
+          },
+          "oracleStalenessMs": {
+            "type": "string",
+            "pattern": "^-?\\d+$",
+            "x-hardbasis-unit": "ms"
+          },
+          "openInterestContracts": {
+            "type": "string",
+            "pattern": "^-?\\d+$",
+            "x-hardbasis-unit": "contracts"
+          },
+          "skewQ9": {
+            "type": "string",
+            "pattern": "^-?\\d+$",
+            "x-hardbasis-unit": "q9"
+          },
+          "lastPrice": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "midQ8": {
+                    "type": "string",
+                    "pattern": "^-?\\d+$",
+                    "x-hardbasis-unit": "q8"
+                  },
+                  "tsMs": {
+                    "type": "string",
+                    "pattern": "^-?\\d+$",
+                    "x-hardbasis-unit": "ms"
+                  }
+                },
+                "required": [
+                  "midQ8",
+                  "tsMs"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "marketId",
+          "underlying",
+          "contractType",
+          "oracleFeedId",
+          "quantoMultiplierMsat",
+          "status",
+          "tickSizeQ8",
+          "priceDp",
+          "minOrderContracts",
+          "maxOrderContracts",
+          "takerFeeQ9",
+          "maxLeverage",
+          "imRateQ9",
+          "mmRateQ9",
+          "baseSpreadQ9",
+          "fundingRateHourlyQ9",
+          "nextFundingTsMs",
+          "oracleStalenessMs",
+          "openInterestContracts",
+          "skewQ9",
+          "lastPrice"
+        ],
+        "additionalProperties": false
+      },
+      "PublicTickerResponse": {
+        "type": "object",
+        "properties": {
+          "asOfMs": {
+            "type": "string",
+            "pattern": "^-?\\d+$",
+            "x-hardbasis-unit": "ms"
+          },
+          "tickers": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "marketId": {
+                  "type": "string"
+                },
+                "last": {
+                  "anyOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "midQ8": {
+                          "type": "string",
+                          "pattern": "^-?\\d+$",
+                          "x-hardbasis-unit": "q8"
+                        },
+                        "tsMs": {
+                          "type": "string",
+                          "pattern": "^-?\\d+$",
+                          "x-hardbasis-unit": "ms"
+                        }
+                      },
+                      "required": [
+                        "midQ8",
+                        "tsMs"
+                      ],
+                      "additionalProperties": false
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "stalenessMs": {
+                  "type": "string",
+                  "pattern": "^-?\\d+$",
+                  "x-hardbasis-unit": "ms"
+                }
+              },
+              "required": [
+                "marketId",
+                "last",
+                "stalenessMs"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "asOfMs",
+          "tickers"
+        ],
+        "additionalProperties": false
+      },
+      "ReferralBindRequest": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "code"
+        ],
+        "additionalProperties": false
+      },
+      "ReferralBindResponse": {
+        "type": "object",
+        "properties": {
+          "bound": {
+            "type": "boolean",
+            "const": true
+          },
+          "referredBy": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "string"
+              },
+              "boundTsMs": {
+                "type": "string",
+                "pattern": "^-?\\d+$",
+                "x-hardbasis-unit": "ms"
+              },
+              "discountQ9": {
+                "type": "string",
+                "pattern": "^-?\\d+$",
+                "x-hardbasis-unit": "q9"
+              },
+              "discountExpiresTsMs": {
+                "type": "string",
+                "pattern": "^-?\\d+$",
+                "x-hardbasis-unit": "ms"
+              },
+              "discountVolumeCapMsat": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^-?\\d+$",
+                    "x-hardbasis-unit": "msat"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "discountVolumeUsedMsat": {
+                "type": "string",
+                "pattern": "^-?\\d+$",
+                "x-hardbasis-unit": "msat"
+              },
+              "discountActive": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "code",
+              "boundTsMs",
+              "discountQ9",
+              "discountExpiresTsMs",
+              "discountVolumeCapMsat",
+              "discountVolumeUsedMsat",
+              "discountActive"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": [
+          "bound",
+          "referredBy"
+        ],
+        "additionalProperties": false
+      },
+      "ReferralClaimResponse": {
+        "type": "object",
+        "properties": {
+          "claimedMsat": {
+            "type": "string",
+            "pattern": "^-?\\d+$",
+            "x-hardbasis-unit": "msat"
+          },
+          "accruals": {
+            "type": "string",
+            "pattern": "^-?\\d+$",
+            "x-hardbasis-unit": "int"
+          }
+        },
+        "required": [
+          "claimedMsat",
+          "accruals"
+        ],
+        "additionalProperties": false
+      },
+      "ReferralCodeRequest": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      },
+      "ReferralCodeResponse": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "createdTsMs": {
+            "type": "string",
+            "pattern": "^-?\\d+$",
+            "x-hardbasis-unit": "ms"
+          }
+        },
+        "required": [
+          "code",
+          "createdTsMs"
+        ],
+        "additionalProperties": false
+      },
+      "ReferralEarningsResponse": {
+        "type": "object",
+        "properties": {
+          "earnings": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "seq": {
+                  "type": "string",
+                  "pattern": "^-?\\d+$",
+                  "x-hardbasis-unit": "seq"
+                },
+                "fillSeq": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^-?\\d+$",
+                      "x-hardbasis-unit": "seq"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "tsMs": {
+                  "type": "string",
+                  "pattern": "^-?\\d+$",
+                  "x-hardbasis-unit": "ms"
+                },
+                "ref": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "grossFeeMsat": {
+                  "type": "string",
+                  "pattern": "^-?\\d+$",
+                  "x-hardbasis-unit": "msat"
+                },
+                "netFeeMsat": {
+                  "type": "string",
+                  "pattern": "^-?\\d+$",
+                  "x-hardbasis-unit": "msat"
+                },
+                "shareQ9": {
+                  "type": "string",
+                  "pattern": "^-?\\d+$",
+                  "x-hardbasis-unit": "q9"
+                },
+                "rewardMsat": {
+                  "type": "string",
+                  "pattern": "^-?\\d+$",
+                  "x-hardbasis-unit": "msat"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "accrued",
+                    "claimed",
+                    "forfeited"
+                  ]
+                },
+                "epochDay": {
+                  "type": "string",
+                  "pattern": "^-?\\d+$",
+                  "x-hardbasis-unit": "ms"
+                },
+                "code": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "seq",
+                "fillSeq",
+                "tsMs",
+                "ref",
+                "grossFeeMsat",
+                "netFeeMsat",
+                "shareQ9",
+                "rewardMsat",
+                "status",
+                "epochDay",
+                "code"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "nextBeforeSeq": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^-?\\d+$",
+                "x-hardbasis-unit": "seq"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "earnings",
+          "nextBeforeSeq"
+        ],
+        "additionalProperties": false
+      },
+      "ReferralStatusResponse": {
+        "type": "object",
+        "properties": {
+          "tsMs": {
+            "type": "string",
+            "pattern": "^-?\\d+$",
+            "x-hardbasis-unit": "ms"
+          },
+          "program": {
+            "type": "object",
+            "properties": {
+              "enabled": {
+                "type": "boolean"
+              },
+              "paused": {
+                "type": "boolean"
+              },
+              "policyVersion": {
+                "type": "string",
+                "pattern": "^-?\\d+$",
+                "x-hardbasis-unit": "int"
+              }
+            },
+            "required": [
+              "enabled",
+              "paused",
+              "policyVersion"
+            ],
+            "additionalProperties": false
+          },
+          "policy": {
+            "type": "object",
+            "properties": {
+              "shareQ9": {
+                "type": "string",
+                "pattern": "^-?\\d+$",
+                "x-hardbasis-unit": "q9"
+              },
+              "shareTiers": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "minActiveReferees": {
+                      "type": "string",
+                      "pattern": "^-?\\d+$",
+                      "x-hardbasis-unit": "int"
+                    },
+                    "shareQ9": {
+                      "type": "string",
+                      "pattern": "^-?\\d+$",
+                      "x-hardbasis-unit": "q9"
+                    }
+                  },
+                  "required": [
+                    "minActiveReferees",
+                    "shareQ9"
+                  ],
+                  "additionalProperties": false
+                }
+              },
+              "refereeDiscountQ9": {
+                "type": "string",
+                "pattern": "^-?\\d+$",
+                "x-hardbasis-unit": "q9"
+              },
+              "refereeDiscountWindowMs": {
+                "type": "string",
+                "pattern": "^-?\\d+$",
+                "x-hardbasis-unit": "ms"
+              },
+              "refereeDiscountVolumeCapMsat": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "pattern": "^-?\\d+$",
+                    "x-hardbasis-unit": "msat"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "rewardWindowMs": {
+                "type": "string",
+                "pattern": "^-?\\d+$",
+                "x-hardbasis-unit": "ms"
+              },
+              "holdbackMs": {
+                "type": "string",
+                "pattern": "^-?\\d+$",
+                "x-hardbasis-unit": "ms"
+              },
+              "minClaimMsat": {
+                "type": "string",
+                "pattern": "^-?\\d+$",
+                "x-hardbasis-unit": "msat"
+              }
+            },
+            "required": [
+              "shareQ9",
+              "shareTiers",
+              "refereeDiscountQ9",
+              "refereeDiscountWindowMs",
+              "refereeDiscountVolumeCapMsat",
+              "rewardWindowMs",
+              "holdbackMs",
+              "minClaimMsat"
+            ],
+            "additionalProperties": false
+          },
+          "eligibility": {
+            "type": "object",
+            "properties": {
+              "eligible": {
+                "type": "boolean"
+              },
+              "gates": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "gate": {
+                      "type": "string"
+                    },
+                    "met": {
+                      "type": "boolean"
+                    },
+                    "requiredMs": {
+                      "type": "string",
+                      "pattern": "^-?\\d+$",
+                      "x-hardbasis-unit": "ms"
+                    },
+                    "currentMs": {
+                      "type": "string",
+                      "pattern": "^-?\\d+$",
+                      "x-hardbasis-unit": "ms"
+                    },
+                    "requiredMsat": {
+                      "type": "string",
+                      "pattern": "^-?\\d+$",
+                      "x-hardbasis-unit": "msat"
+                    },
+                    "currentMsat": {
+                      "type": "string",
+                      "pattern": "^-?\\d+$",
+                      "x-hardbasis-unit": "msat"
+                    },
+                    "required": {
+                      "type": "string",
+                      "pattern": "^-?\\d+$",
+                      "x-hardbasis-unit": "int"
+                    },
+                    "current": {
+                      "type": "string",
+                      "pattern": "^-?\\d+$",
+                      "x-hardbasis-unit": "int"
+                    }
+                  },
+                  "required": [
+                    "gate",
+                    "met"
+                  ],
+                  "additionalProperties": false
+                }
+              }
+            },
+            "required": [
+              "eligible",
+              "gates"
+            ],
+            "additionalProperties": false
+          },
+          "code": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "code": {
+                    "type": "string"
+                  },
+                  "createdTsMs": {
+                    "type": "string",
+                    "pattern": "^-?\\d+$",
+                    "x-hardbasis-unit": "ms"
+                  },
+                  "disabled": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "code",
+                  "createdTsMs",
+                  "disabled"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "referredBy": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "code": {
+                    "type": "string"
+                  },
+                  "boundTsMs": {
+                    "type": "string",
+                    "pattern": "^-?\\d+$",
+                    "x-hardbasis-unit": "ms"
+                  },
+                  "discountQ9": {
+                    "type": "string",
+                    "pattern": "^-?\\d+$",
+                    "x-hardbasis-unit": "q9"
+                  },
+                  "discountExpiresTsMs": {
+                    "type": "string",
+                    "pattern": "^-?\\d+$",
+                    "x-hardbasis-unit": "ms"
+                  },
+                  "discountVolumeCapMsat": {
+                    "anyOf": [
+                      {
+                        "type": "string",
+                        "pattern": "^-?\\d+$",
+                        "x-hardbasis-unit": "msat"
+                      },
+                      {
+                        "type": "null"
+                      }
+                    ]
+                  },
+                  "discountVolumeUsedMsat": {
+                    "type": "string",
+                    "pattern": "^-?\\d+$",
+                    "x-hardbasis-unit": "msat"
+                  },
+                  "discountActive": {
+                    "type": "boolean"
+                  }
+                },
+                "required": [
+                  "code",
+                  "boundTsMs",
+                  "discountQ9",
+                  "discountExpiresTsMs",
+                  "discountVolumeCapMsat",
+                  "discountVolumeUsedMsat",
+                  "discountActive"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "stats": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "referees": {
+                    "type": "string",
+                    "pattern": "^-?\\d+$",
+                    "x-hardbasis-unit": "int"
+                  },
+                  "activeReferees": {
+                    "type": "string",
+                    "pattern": "^-?\\d+$",
+                    "x-hardbasis-unit": "int"
+                  },
+                  "tier": {
+                    "type": "object",
+                    "properties": {
+                      "shareQ9": {
+                        "type": "string",
+                        "pattern": "^-?\\d+$",
+                        "x-hardbasis-unit": "q9"
+                      }
+                    },
+                    "required": [
+                      "shareQ9"
+                    ],
+                    "additionalProperties": false
+                  },
+                  "lifetimeEarnedMsat": {
+                    "type": "string",
+                    "pattern": "^-?\\d+$",
+                    "x-hardbasis-unit": "msat"
+                  },
+                  "earned30dMsat": {
+                    "type": "string",
+                    "pattern": "^-?\\d+$",
+                    "x-hardbasis-unit": "msat"
+                  },
+                  "claimableMsat": {
+                    "type": "string",
+                    "pattern": "^-?\\d+$",
+                    "x-hardbasis-unit": "msat"
+                  },
+                  "pendingHoldbackMsat": {
+                    "type": "string",
+                    "pattern": "^-?\\d+$",
+                    "x-hardbasis-unit": "msat"
+                  },
+                  "claimedMsat": {
+                    "type": "string",
+                    "pattern": "^-?\\d+$",
+                    "x-hardbasis-unit": "msat"
+                  },
+                  "forfeitedMsat": {
+                    "type": "string",
+                    "pattern": "^-?\\d+$",
+                    "x-hardbasis-unit": "msat"
+                  }
+                },
+                "required": [
+                  "referees",
+                  "activeReferees",
+                  "tier",
+                  "lifetimeEarnedMsat",
+                  "earned30dMsat",
+                  "claimableMsat",
+                  "pendingHoldbackMsat",
+                  "claimedMsat",
+                  "forfeitedMsat"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "bindWindow": {
+            "anyOf": [
+              {
+                "type": "object",
+                "properties": {
+                  "openUntilTsMs": {
+                    "type": "string",
+                    "pattern": "^-?\\d+$",
+                    "x-hardbasis-unit": "ms"
+                  }
+                },
+                "required": [
+                  "openUntilTsMs"
+                ],
+                "additionalProperties": false
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "tsMs",
+          "program",
+          "policy",
+          "eligibility",
+          "code",
+          "referredBy",
+          "stats",
+          "bindWindow"
+        ],
+        "additionalProperties": false
+      },
+      "SessionCreateRequest": {
+        "type": "object",
+        "properties": {
+          "label": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 64
+          },
+          "scopes": {
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "read",
+                "trade",
+                "withdraw",
+                "admin-sessions"
+              ]
+            }
+          }
+        },
+        "additionalProperties": false
+      },
+      "SessionCreateResponse": {
+        "type": "object",
+        "properties": {
+          "apiKey": {
+            "type": "string"
+          },
+          "keyId": {
+            "type": "string"
+          },
+          "scopes": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "read",
+                "trade",
+                "withdraw",
+                "admin-sessions"
+              ]
+            }
+          }
+        },
+        "required": [
+          "keyId",
+          "scopes"
+        ],
+        "additionalProperties": false
+      },
+      "SessionRevokeRequest": {
+        "type": "object",
+        "properties": {
+          "keyId": {
+            "type": "string",
+            "format": "uuid",
+            "pattern": "^([0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-8][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}|00000000-0000-0000-0000-000000000000|ffffffff-ffff-ffff-ffff-ffffffffffff)$"
+          },
+          "allButCurrent": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "SessionRevokeResponse": {
+        "type": "object",
+        "properties": {
+          "revoked": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "required": [
+          "revoked"
+        ],
+        "additionalProperties": false
+      },
+      "SessionsListResponse": {
+        "type": "object",
+        "properties": {
+          "tsMs": {
+            "type": "string",
+            "pattern": "^-?\\d+$",
+            "x-hardbasis-unit": "ms"
+          },
+          "sessions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "keyId": {
+                  "type": "string"
+                },
+                "accountId": {
+                  "type": "string"
+                },
+                "label": {
+                  "type": "string"
+                },
+                "scopes": {
+                  "type": "array",
+                  "items": {
+                    "type": "string",
+                    "enum": [
+                      "read",
+                      "trade",
+                      "withdraw",
+                      "admin-sessions"
+                    ]
+                  }
+                },
+                "uaClass": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "ipCountryFirst": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "createdTsMs": {
+                  "type": "string",
+                  "pattern": "^-?\\d+$",
+                  "x-hardbasis-unit": "ms"
+                },
+                "lastSeenTsMs": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^-?\\d+$",
+                      "x-hardbasis-unit": "ms"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "revokedTsMs": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^-?\\d+$",
+                      "x-hardbasis-unit": "ms"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "revokedBy": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "revokeReason": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "current": {
+                  "type": "string",
+                  "pattern": "^-?\\d+$",
+                  "x-hardbasis-unit": "int"
+                }
+              },
+              "required": [
+                "keyId",
+                "accountId",
+                "label",
+                "scopes",
+                "uaClass",
+                "ipCountryFirst",
+                "createdTsMs",
+                "lastSeenTsMs",
+                "revokedTsMs",
+                "revokedBy",
+                "revokeReason",
+                "current"
+              ],
+              "additionalProperties": false
+            }
+          }
+        },
+        "required": [
+          "tsMs",
+          "sessions"
+        ],
+        "additionalProperties": false
+      },
+      "WithdrawalCreatedResponse": {
+        "type": "object",
+        "properties": {
+          "railRef": {
+            "type": "string"
+          },
+          "queued": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "railRef",
+          "queued"
+        ],
+        "additionalProperties": false
+      },
+      "WithdrawalQuoteRequest": {
+        "type": "object",
+        "properties": {
+          "invoice": {
+            "type": "string"
+          },
+          "toAddress": {
+            "type": "string"
+          },
+          "amountMsat": {
+            "type": "string",
+            "pattern": "^-?\\d+$",
+            "x-hardbasis-unit": "msat"
+          }
+        },
+        "additionalProperties": false
+      },
+      "WithdrawalQuoteResponse": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string",
+                "const": "spark"
+              },
+              "feeMsat": {
+                "type": "string",
+                "pattern": "^-?\\d+$",
+                "x-hardbasis-unit": "msat"
+              },
+              "firstSeen": {
+                "type": "boolean"
+              },
+              "confirmRequired": {
+                "type": "boolean"
+              },
+              "confirmThresholdMsat": {
+                "type": "string",
+                "pattern": "^-?\\d+$",
+                "x-hardbasis-unit": "msat"
+              },
+              "confirmToken": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "path",
+              "feeMsat",
+              "firstSeen",
+              "confirmRequired",
+              "confirmThresholdMsat"
+            ],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "path": {
+                "type": "string",
+                "const": "lightning"
+              },
+              "amountMsat": {
+                "type": "string",
+                "pattern": "^-?\\d+$",
+                "x-hardbasis-unit": "msat"
+              },
+              "feeEstimateMsat": {
+                "type": "string",
+                "pattern": "^-?\\d+$",
+                "x-hardbasis-unit": "msat"
+              },
+              "maxFeeMsat": {
+                "type": "string",
+                "pattern": "^-?\\d+$",
+                "x-hardbasis-unit": "msat"
+              },
+              "paymentHash": {
+                "type": "string"
+              }
+            },
+            "required": [
+              "path",
+              "amountMsat",
+              "feeEstimateMsat",
+              "maxFeeMsat",
+              "paymentHash"
+            ],
+            "additionalProperties": false
+          }
+        ]
+      },
+      "WithdrawalRequest": {
+        "type": "object",
+        "properties": {
+          "amountMsat": {
+            "type": "string",
+            "pattern": "^-?\\d+$",
+            "x-hardbasis-unit": "msat"
+          },
+          "toAddress": {
+            "type": "string"
+          },
+          "confirmToken": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "amountMsat"
+        ],
+        "additionalProperties": false
+      },
+      "WithdrawalsPage": {
+        "type": "object",
+        "properties": {
+          "withdrawals": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "idempotencyKey": {
+                  "type": "string"
+                },
+                "amountMsat": {
+                  "type": "string",
+                  "pattern": "^-?\\d+$",
+                  "x-hardbasis-unit": "msat"
+                },
+                "feeMsat": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^-?\\d+$",
+                      "x-hardbasis-unit": "msat"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "state": {
+                  "type": "string",
+                  "enum": [
+                    "requested",
+                    "queued",
+                    "paid",
+                    "returned"
+                  ]
+                },
+                "path": {
+                  "type": "string",
+                  "enum": [
+                    "spark",
+                    "lightning"
+                  ]
+                },
+                "queuedReason": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "railRef": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                },
+                "requestedTsMs": {
+                  "type": "string",
+                  "pattern": "^-?\\d+$",
+                  "x-hardbasis-unit": "ms"
+                },
+                "paidTsMs": {
+                  "anyOf": [
+                    {
+                      "type": "string",
+                      "pattern": "^-?\\d+$",
+                      "x-hardbasis-unit": "ms"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ]
+                }
+              },
+              "required": [
+                "idempotencyKey",
+                "amountMsat",
+                "feeMsat",
+                "state",
+                "path",
+                "queuedReason",
+                "railRef",
+                "requestedTsMs",
+                "paidTsMs"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "nextBeforeSeq": {
+            "anyOf": [
+              {
+                "type": "string",
+                "pattern": "^-?\\d+$",
+                "x-hardbasis-unit": "seq"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "withdrawals",
+          "nextBeforeSeq"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "responses": {
+      "Error": {
+        "description": "Refusal — a stable machine `code` (ErrorCode) beside human `error` prose.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "string"
+                },
+                "code": {
+                  "$ref": "#/components/schemas/ErrorCode"
+                }
+              },
+              "required": [
+                "error"
+              ]
+            }
+          }
+        }
+      },
+      "RateLimited": {
+        "description": "429 — a token bucket is exhausted.",
+        "headers": {
+          "X-RateLimit-Limit": {
+            "schema": {
+              "type": "integer"
+            },
+            "description": "The binding budget's per-minute limit."
+          },
+          "X-RateLimit-Remaining": {
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Tokens left in the binding budget."
+          },
+          "X-RateLimit-Reset": {
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Epoch seconds when the budget next admits."
+          },
+          "Retry-After": {
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Seconds to wait before retrying."
+          }
+        },
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "string"
+                },
+                "code": {
+                  "$ref": "#/components/schemas/ErrorCode"
+                }
+              },
+              "required": [
+                "error"
+              ]
+            }
+          }
+        }
+      },
+      "PaymentRequired": {
+        "description": "402 — reserved for L402/Lightning-metered access (PAPI-8). Not returned today; documented so it lands additively.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "type": "object",
+              "properties": {
+                "error": {
+                  "type": "string"
+                },
+                "code": {
+                  "$ref": "#/components/schemas/ErrorCode"
+                }
+              },
+              "required": [
+                "error"
+              ]
+            }
+          }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/healthz": {
+      "get": {
+        "summary": "Liveness + DB reachability probe.",
+        "operationId": "getHealthz",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthzResponse"
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service Unavailable",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HealthzResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/deployment": {
+      "get": {
+        "summary": "Deployment posture (prod/testnet) — drives the testnet banner.",
+        "operationId": "getDeployment",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DeploymentResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/por": {
+      "get": {
+        "summary": "Proof-of-Reserves dashboard (HTML).",
+        "operationId": "getPor",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/por/dashboard": {
+      "get": {
+        "summary": "Proof-of-Reserves dashboard (HTML, engine-served).",
+        "operationId": "getPorDashboard",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v1/por/proof": {
+      "get": {
+        "summary": "Merkle inclusion proof of the account's liability in the current PoR tree.",
+        "operationId": "getV1PorProof",
+        "security": [
+          {
+            "apiKey": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PorProofResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Limit": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "The binding budget's per-minute limit."
+              },
+              "X-RateLimit-Remaining": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Tokens left in the binding budget."
+              },
+              "X-RateLimit-Reset": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Epoch seconds when the budget next admits."
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v1/markets": {
+      "get": {
+        "summary": "All markets (skew quantized §13).",
+        "operationId": "getV1Markets",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PublicMarket"
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v1/markets/{id}": {
+      "get": {
+        "summary": "One market.",
+        "operationId": "getV1MarketsById",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicMarket"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v1/markets/{id}/funding": {
+      "get": {
+        "summary": "Last 100 funding boundaries (skew quantized §E).",
+        "operationId": "getV1MarketsByIdFunding",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/FundingHistoryEntry"
+                  }
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v1/markets/{id}/stats24h": {
+      "get": {
+        "summary": "24h volume + traded hi/lo, derived from fills.",
+        "operationId": "getV1MarketsByIdStats24h",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MarketStats24hResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v1/markets/{id}/candles": {
+      "get": {
+        "summary": "1m OHLC candles (interval fixed at 60).",
+        "operationId": "getV1MarketsByIdCandles",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "interval",
+            "in": "query",
+            "required": false,
+            "description": "Candle interval in SECONDS (integer, Coinbase granularity convention — not a label like \"1m\") — only 60 (the 1m base) is supported; aggregate coarser frames client-side.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "60"
+              ]
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Number of most-recent candles to return, 1..96 (default 96).",
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d+$"
+            }
+          }
+        ],
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CandlesResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v1/public/ticker": {
+      "get": {
+        "summary": "Landing-page ticker (microcached).",
+        "operationId": "getV1PublicTicker",
+        "security": [],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicTickerResponse"
+                }
+              }
+            }
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v1/limits": {
+      "get": {
+        "summary": "The caller's rate-limit tier + per-budget config and remaining.",
+        "operationId": "getV1Limits",
+        "security": [
+          {
+            "apiKey": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LimitsResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Limit": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "The binding budget's per-minute limit."
+              },
+              "X-RateLimit-Remaining": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Tokens left in the binding budget."
+              },
+              "X-RateLimit-Reset": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Epoch seconds when the budget next admits."
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v1/account": {
+      "get": {
+        "summary": "Account balances, rail address, per-path deposit fees.",
+        "operationId": "getV1Account",
+        "security": [
+          {
+            "apiKey": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AccountResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Limit": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "The binding budget's per-minute limit."
+              },
+              "X-RateLimit-Remaining": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Tokens left in the binding budget."
+              },
+              "X-RateLimit-Reset": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Epoch seconds when the budget next admits."
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v1/deposit-invoices": {
+      "post": {
+        "summary": "Create a Lightning deposit invoice.",
+        "operationId": "postV1DepositInvoices",
+        "security": [
+          {
+            "apiKey": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DepositInvoiceRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DepositInvoiceResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Limit": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "The binding budget's per-minute limit."
+              },
+              "X-RateLimit-Remaining": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Tokens left in the binding budget."
+              },
+              "X-RateLimit-Reset": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Epoch seconds when the budget next admits."
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v1/sessions": {
+      "get": {
+        "summary": "The account's live/revoked sessions (never the key value).",
+        "operationId": "getV1Sessions",
+        "security": [
+          {
+            "apiKey": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionsListResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Limit": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "The binding budget's per-minute limit."
+              },
+              "X-RateLimit-Remaining": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Tokens left in the binding budget."
+              },
+              "X-RateLimit-Reset": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Epoch seconds when the budget next admits."
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "post": {
+        "summary": "Mint a new session key (delegate key primitive).",
+        "operationId": "postV1Sessions",
+        "security": [
+          {
+            "apiKey": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SessionCreateRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionCreateResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Limit": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "The binding budget's per-minute limit."
+              },
+              "X-RateLimit-Remaining": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Tokens left in the binding budget."
+              },
+              "X-RateLimit-Reset": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Epoch seconds when the budget next admits."
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v1/sessions/revoke": {
+      "post": {
+        "summary": "Revoke one session or all-but-current.",
+        "operationId": "postV1SessionsRevoke",
+        "security": [
+          {
+            "apiKey": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SessionRevokeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SessionRevokeResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Limit": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "The binding budget's per-minute limit."
+              },
+              "X-RateLimit-Remaining": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Tokens left in the binding budget."
+              },
+              "X-RateLimit-Reset": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Epoch seconds when the budget next admits."
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v1/positions": {
+      "get": {
+        "summary": "Open positions for the account.",
+        "operationId": "getV1Positions",
+        "security": [
+          {
+            "apiKey": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/Position"
+                  }
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Limit": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "The binding budget's per-minute limit."
+              },
+              "X-RateLimit-Remaining": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Tokens left in the binding budget."
+              },
+              "X-RateLimit-Reset": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Epoch seconds when the budget next admits."
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v1/fills": {
+      "get": {
+        "summary": "Fills history (cursor-paginated).",
+        "operationId": "getV1Fills",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Page size, 1..200 (default is the endpoint's historical window, not a cap).",
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d+$"
+            }
+          },
+          {
+            "name": "beforeSeq",
+            "in": "query",
+            "required": false,
+            "description": "Cursor: return rows strictly before this sequence (decimal). Omit for page one.",
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d+$"
+            }
+          }
+        ],
+        "security": [
+          {
+            "apiKey": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FillsHistoryResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Limit": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "The binding budget's per-minute limit."
+              },
+              "X-RateLimit-Remaining": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Tokens left in the binding budget."
+              },
+              "X-RateLimit-Reset": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Epoch seconds when the budget next admits."
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v1/deposits": {
+      "get": {
+        "summary": "Deposit history (cursor-paginated).",
+        "operationId": "getV1Deposits",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Page size, 1..200 (default is the endpoint's historical window, not a cap).",
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d+$"
+            }
+          },
+          {
+            "name": "beforeSeq",
+            "in": "query",
+            "required": false,
+            "description": "Cursor: return rows strictly before this sequence (decimal). Omit for page one.",
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d+$"
+            }
+          }
+        ],
+        "security": [
+          {
+            "apiKey": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/DepositsHistoryResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Limit": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "The binding budget's per-minute limit."
+              },
+              "X-RateLimit-Remaining": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Tokens left in the binding budget."
+              },
+              "X-RateLimit-Reset": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Epoch seconds when the budget next admits."
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v1/funding": {
+      "get": {
+        "summary": "Funding-flow history (cursor-paginated).",
+        "operationId": "getV1Funding",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Page size, 1..200 (default is the endpoint's historical window, not a cap).",
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d+$"
+            }
+          },
+          {
+            "name": "beforeSeq",
+            "in": "query",
+            "required": false,
+            "description": "Cursor: return rows strictly before this sequence (decimal). Omit for page one.",
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d+$"
+            }
+          }
+        ],
+        "security": [
+          {
+            "apiKey": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FundingFlowsHistoryResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Limit": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "The binding budget's per-minute limit."
+              },
+              "X-RateLimit-Remaining": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Tokens left in the binding budget."
+              },
+              "X-RateLimit-Reset": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Epoch seconds when the budget next admits."
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v1/orders": {
+      "get": {
+        "summary": "Orders (optionally ?status= filtered), or ?state=resting|armed triggers (cursor-paginated).",
+        "operationId": "getV1Orders",
+        "parameters": [
+          {
+            "name": "state",
+            "in": "query",
+            "required": false,
+            "description": "Selects the conditional-order trigger list instead of the plain order set. Omit for orders.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "resting",
+                "armed"
+              ]
+            }
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "required": false,
+            "description": "Filter the plain order set to these OrderStatus values (repeatable or comma-separated). Omitted returns every status. Does not apply when `state` is set.",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "accepted",
+                  "filled",
+                  "canceled",
+                  "rejected"
+                ]
+              }
+            },
+            "style": "form",
+            "explode": true
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Page size, 1..200 (default is the endpoint's historical window, not a cap).",
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d+$"
+            }
+          },
+          {
+            "name": "beforeSeq",
+            "in": "query",
+            "required": false,
+            "description": "Cursor: return rows strictly before this sequence (decimal). Omit for page one.",
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d+$"
+            }
+          }
+        ],
+        "security": [
+          {
+            "apiKey": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrdersPage"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Limit": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "The binding budget's per-minute limit."
+              },
+              "X-RateLimit-Remaining": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Tokens left in the binding budget."
+              },
+              "X-RateLimit-Reset": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Epoch seconds when the budget next admits."
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "402": {
+            "$ref": "#/components/responses/PaymentRequired"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "post": {
+        "summary": "Submit an order, bracket, or trigger (idempotency key = order id).",
+        "operationId": "postV1Orders",
+        "security": [
+          {
+            "apiKey": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrderRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderCreatedResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Limit": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "The binding budget's per-minute limit."
+              },
+              "X-RateLimit-Remaining": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Tokens left in the binding budget."
+              },
+              "X-RateLimit-Reset": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Epoch seconds when the budget next admits."
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "402": {
+            "$ref": "#/components/responses/PaymentRequired"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v1/orders/{id}": {
+      "get": {
+        "summary": "One order's status.",
+        "operationId": "getV1OrdersById",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "apiKey": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderSummary"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Limit": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "The binding budget's per-minute limit."
+              },
+              "X-RateLimit-Remaining": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Tokens left in the binding budget."
+              },
+              "X-RateLimit-Reset": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Epoch seconds when the budget next admits."
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Cancel an order / trigger / bracket by id.",
+        "operationId": "deleteV1OrdersById",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "security": [
+          {
+            "apiKey": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderCanceledResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Limit": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "The binding budget's per-minute limit."
+              },
+              "X-RateLimit-Remaining": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Tokens left in the binding budget."
+              },
+              "X-RateLimit-Reset": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Epoch seconds when the budget next admits."
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v1/cancel-all-after": {
+      "post": {
+        "summary": "Dead-man's-switch: arm/refresh/disarm cancel-all-after.",
+        "operationId": "postV1CancelAllAfter",
+        "security": [
+          {
+            "apiKey": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CancelAllAfterRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CancelAllAfterResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Limit": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "The binding budget's per-minute limit."
+              },
+              "X-RateLimit-Remaining": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Tokens left in the binding budget."
+              },
+              "X-RateLimit-Reset": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Epoch seconds when the budget next admits."
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/Error"
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v1/withdrawals/quote": {
+      "post": {
+        "summary": "Fee quote + wrong-address first-seen check.",
+        "operationId": "postV1WithdrawalsQuote",
+        "security": [
+          {
+            "apiKey": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WithdrawalQuoteRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WithdrawalQuoteResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Limit": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "The binding budget's per-minute limit."
+              },
+              "X-RateLimit-Remaining": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Tokens left in the binding budget."
+              },
+              "X-RateLimit-Reset": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Epoch seconds when the budget next admits."
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v1/withdrawals": {
+      "post": {
+        "summary": "Withdraw free balance (spark or lightning).",
+        "operationId": "postV1Withdrawals",
+        "security": [
+          {
+            "apiKey": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WithdrawalRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WithdrawalCreatedResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Limit": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "The binding budget's per-minute limit."
+              },
+              "X-RateLimit-Remaining": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Tokens left in the binding budget."
+              },
+              "X-RateLimit-Reset": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Epoch seconds when the budget next admits."
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "402": {
+            "$ref": "#/components/responses/PaymentRequired"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "428": {
+            "description": "Confirmation Required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConfirmationRequiredResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "get": {
+        "summary": "Withdrawal history (cursor-paginated).",
+        "operationId": "getV1Withdrawals",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Page size, 1..200 (default is the endpoint's historical window, not a cap).",
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d+$"
+            }
+          },
+          {
+            "name": "beforeSeq",
+            "in": "query",
+            "required": false,
+            "description": "Cursor: return rows strictly before this sequence (decimal). Omit for page one.",
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d+$"
+            }
+          }
+        ],
+        "security": [
+          {
+            "apiKey": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/WithdrawalsPage"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Limit": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "The binding budget's per-minute limit."
+              },
+              "X-RateLimit-Remaining": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Tokens left in the binding budget."
+              },
+              "X-RateLimit-Reset": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Epoch seconds when the budget next admits."
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "402": {
+            "$ref": "#/components/responses/PaymentRequired"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v1/referral": {
+      "get": {
+        "summary": "The account's referral status.",
+        "operationId": "getV1Referral",
+        "security": [
+          {
+            "apiKey": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReferralStatusResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Limit": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "The binding budget's per-minute limit."
+              },
+              "X-RateLimit-Remaining": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Tokens left in the binding budget."
+              },
+              "X-RateLimit-Reset": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Epoch seconds when the budget next admits."
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v1/referral/code": {
+      "post": {
+        "summary": "Create the account's referral code.",
+        "operationId": "postV1ReferralCode",
+        "security": [
+          {
+            "apiKey": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReferralCodeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReferralCodeResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Limit": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "The binding budget's per-minute limit."
+              },
+              "X-RateLimit-Remaining": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Tokens left in the binding budget."
+              },
+              "X-RateLimit-Reset": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Epoch seconds when the budget next admits."
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v1/referral/bind": {
+      "post": {
+        "summary": "Bind to a referrer's code (grace window).",
+        "operationId": "postV1ReferralBind",
+        "security": [
+          {
+            "apiKey": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReferralBindRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReferralBindResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Limit": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "The binding budget's per-minute limit."
+              },
+              "X-RateLimit-Remaining": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Tokens left in the binding budget."
+              },
+              "X-RateLimit-Reset": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Epoch seconds when the budget next admits."
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v1/referral/earnings": {
+      "get": {
+        "summary": "Referral earnings (cursor-paginated).",
+        "operationId": "getV1ReferralEarnings",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Page size, 1..200 (default is the endpoint's historical window, not a cap).",
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d+$"
+            }
+          },
+          {
+            "name": "beforeSeq",
+            "in": "query",
+            "required": false,
+            "description": "Cursor: return rows strictly before this sequence (decimal). Omit for page one.",
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d+$"
+            }
+          }
+        ],
+        "security": [
+          {
+            "apiKey": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReferralEarningsResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Limit": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "The binding budget's per-minute limit."
+              },
+              "X-RateLimit-Remaining": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Tokens left in the binding budget."
+              },
+              "X-RateLimit-Reset": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Epoch seconds when the budget next admits."
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v1/referral/referees": {
+      "get": {
+        "summary": "The account's referees.",
+        "operationId": "getV1ReferralReferees",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Page size, 1..200 (default is the endpoint's historical window, not a cap).",
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d+$"
+            }
+          },
+          {
+            "name": "beforeSeq",
+            "in": "query",
+            "required": false,
+            "description": "Cursor: return rows strictly before this sequence (decimal). Omit for page one.",
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d+$"
+            }
+          }
+        ],
+        "security": [
+          {
+            "apiKey": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Limit": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "The binding budget's per-minute limit."
+              },
+              "X-RateLimit-Remaining": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Tokens left in the binding budget."
+              },
+              "X-RateLimit-Reset": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Epoch seconds when the budget next admits."
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v1/referral/claim": {
+      "post": {
+        "summary": "Claim vested referral rewards.",
+        "operationId": "postV1ReferralClaim",
+        "security": [
+          {
+            "apiKey": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReferralClaimResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Limit": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "The binding budget's per-minute limit."
+              },
+              "X-RateLimit-Remaining": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Tokens left in the binding budget."
+              },
+              "X-RateLimit-Reset": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Epoch seconds when the budget next admits."
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v1/promoter/apply": {
+      "post": {
+        "summary": "Apply for a promoter profile.",
+        "operationId": "postV1PromoterApply",
+        "security": [
+          {
+            "apiKey": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PromoterApplyRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PromoterApplyResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Limit": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "The binding budget's per-minute limit."
+              },
+              "X-RateLimit-Remaining": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Tokens left in the binding budget."
+              },
+              "X-RateLimit-Reset": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Epoch seconds when the budget next admits."
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v1/promoter": {
+      "get": {
+        "summary": "Promoter profile + status.",
+        "operationId": "getV1Promoter",
+        "security": [
+          {
+            "apiKey": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Limit": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "The binding budget's per-minute limit."
+              },
+              "X-RateLimit-Remaining": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Tokens left in the binding budget."
+              },
+              "X-RateLimit-Reset": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Epoch seconds when the budget next admits."
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "404": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v1/promoter/codes": {
+      "post": {
+        "summary": "Create a promoter code.",
+        "operationId": "postV1PromoterCodes",
+        "security": [
+          {
+            "apiKey": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PromoterCodeRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Limit": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "The binding budget's per-minute limit."
+              },
+              "X-RateLimit-Remaining": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Tokens left in the binding budget."
+              },
+              "X-RateLimit-Reset": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Epoch seconds when the budget next admits."
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      },
+      "get": {
+        "summary": "The promoter's codes.",
+        "operationId": "getV1PromoterCodes",
+        "security": [
+          {
+            "apiKey": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Limit": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "The binding budget's per-minute limit."
+              },
+              "X-RateLimit-Remaining": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Tokens left in the binding budget."
+              },
+              "X-RateLimit-Reset": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Epoch seconds when the budget next admits."
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v1/promoter/stats": {
+      "get": {
+        "summary": "Promoter stats (days window).",
+        "operationId": "getV1PromoterStats",
+        "parameters": [
+          {
+            "name": "days",
+            "in": "query",
+            "required": false,
+            "description": "Look-back window in days, 1..90 (default 30).",
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d+$"
+            }
+          }
+        ],
+        "security": [
+          {
+            "apiKey": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Limit": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "The binding budget's per-minute limit."
+              },
+              "X-RateLimit-Remaining": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Tokens left in the binding budget."
+              },
+              "X-RateLimit-Reset": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Epoch seconds when the budget next admits."
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v1/promoter/earnings": {
+      "get": {
+        "summary": "Promoter earnings (cursor-paginated).",
+        "operationId": "getV1PromoterEarnings",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Page size, 1..200 (default is the endpoint's historical window, not a cap).",
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d+$"
+            }
+          },
+          {
+            "name": "beforeSeq",
+            "in": "query",
+            "required": false,
+            "description": "Cursor: return rows strictly before this sequence (decimal). Omit for page one.",
+            "schema": {
+              "type": "string",
+              "pattern": "^\\d+$"
+            }
+          }
+        ],
+        "security": [
+          {
+            "apiKey": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReferralEarningsResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Limit": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "The binding budget's per-minute limit."
+              },
+              "X-RateLimit-Remaining": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Tokens left in the binding budget."
+              },
+              "X-RateLimit-Reset": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Epoch seconds when the budget next admits."
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v1/promoter/claim": {
+      "post": {
+        "summary": "Claim vested promoter rewards.",
+        "operationId": "postV1PromoterClaim",
+        "security": [
+          {
+            "apiKey": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReferralClaimResponse"
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Limit": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "The binding budget's per-minute limit."
+              },
+              "X-RateLimit-Remaining": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Tokens left in the binding budget."
+              },
+              "X-RateLimit-Reset": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Epoch seconds when the budget next admits."
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v1/signup": {
+      "post": {
+        "summary": "Self-serve session (testnet profile only).",
+        "operationId": "postV1Signup",
+        "security": [],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            }
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "409": {
+            "$ref": "#/components/responses/Error"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    },
+    "/v1/faucet": {
+      "post": {
+        "summary": "Testnet faucet grant (rate-limited).",
+        "operationId": "postV1Faucet",
+        "security": [
+          {
+            "apiKey": []
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true
+                }
+              }
+            },
+            "headers": {
+              "X-RateLimit-Limit": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "The binding budget's per-minute limit."
+              },
+              "X-RateLimit-Remaining": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Tokens left in the binding budget."
+              },
+              "X-RateLimit-Reset": {
+                "schema": {
+                  "type": "integer"
+                },
+                "description": "Epoch seconds when the budget next admits."
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Error"
+          },
+          "403": {
+            "$ref": "#/components/responses/Error"
+          },
+          "429": {
+            "$ref": "#/components/responses/RateLimited"
+          },
+          "default": {
+            "$ref": "#/components/responses/Error"
+          }
+        }
+      }
+    }
+  }
+}
