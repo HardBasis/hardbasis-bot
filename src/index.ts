@@ -35,6 +35,14 @@ async function main(): Promise<void> {
   });
   log.info("hardbasis-bot starting", { baseUrl: cfg.baseUrl, once: cfg.once });
 
+  // Deliberate alert self-test (HB_ALERT_SELFTEST=1): fire ONE ALERT at startup
+  // so an operator can prove invariant-violation alerts escape the box before
+  // trusting them for days. Fires through the same webhook/ntfy path a real
+  // finding uses; a no-op unless an alert sink is configured.
+  if (cfg.alertSelfTest) {
+    log.alert("hardbasis-bot: startup alert self-test — if you received this, invariant-violation alerts will escape the box");
+  }
+
   const http = new HttpClient(cfg.baseUrl, log);
   const api = new Api(http);
 

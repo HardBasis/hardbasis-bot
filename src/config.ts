@@ -50,6 +50,8 @@ export interface Config {
   // alerts
   alertWebhookUrl: string;
   alertNtfyUrl: string;
+  /** Fire one ALERT at startup to prove the webhook/ntfy escape path works. */
+  alertSelfTest: boolean;
   // CLI
   once: boolean;
 }
@@ -79,6 +81,7 @@ export function loadConfig(argv: string[] = process.argv.slice(2)): Config {
     logMaxFiles: num("HB_LOG_MAX_FILES", 5),
     alertWebhookUrl: str("HB_ALERT_WEBHOOK_URL", ""),
     alertNtfyUrl: str("HB_ALERT_NTFY_URL", ""),
+    alertSelfTest: bool("HB_ALERT_SELFTEST") || argv.includes("--alert-selftest"),
     once: argv.includes("--once"),
   };
 }
