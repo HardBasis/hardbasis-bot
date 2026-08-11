@@ -1,0 +1,29 @@
+# One command for a stranger, the same command for us:
+#   git clone … && cd hardbasis-bot && cp .env.example .env && docker compose up -d
+#
+# The bot self-bootstraps its account on first run; state and logs live in named
+# volumes so they survive `up`/`down` (but a real key never lands in the image).
+services:
+  bot:
+    build: .
+    image: hardbasis-bot:local
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      HB_STATE_DIR: /app/state
+      HB_LOG_DIR: /app/logs
+    volumes:
+      - bot-state:/app/state
+      - bot-logs:/app/logs
+    # Structured JSON to stdout is captured by the json-file driver, size-capped
+    # so a 1 GB droplet can't fill from container logs either.
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+volumes:
+  bot-state:
+  bot-logs:
