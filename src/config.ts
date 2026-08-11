@@ -38,6 +38,10 @@ export interface Config {
   // timing
   tickMs: number;
   deadmanMs: bigint;
+  // confirmation-flow exercise (accumulate past the confirm threshold)
+  exerciseConfirm: boolean;
+  faucetPaceMs: number;
+  faucetMaxWaitMs: number;
   // logging
   logDir: string;
   stateDir: string;
@@ -61,9 +65,14 @@ export function loadConfig(argv: string[] = process.argv.slice(2)): Config {
     maxDailyTurnoverContracts: int("HB_MAX_DAILY_TURNOVER_CONTRACTS", 200_000n),
     orderContracts: int("HB_ORDER_CONTRACTS", 500n),
     maxSignups: Number(int("HB_MAX_SIGNUPS", 1n)),
-    maxFaucetDraws: Number(int("HB_MAX_FAUCET_DRAWS", 3n)),
+    // enough draws to accumulate past the ~0.1 BTC confirm threshold (~12–15
+    // draws), so the soak can exercise the first-seen 428 confirmation flow.
+    maxFaucetDraws: Number(int("HB_MAX_FAUCET_DRAWS", 15n)),
     tickMs: num("HB_TICK_MS", 15_000),
     deadmanMs: int("HB_DEADMAN_MS", 60_000n),
+    exerciseConfirm: !argv.includes("--no-confirm-exercise") && (process.env.HB_EXERCISE_CONFIRM ?? "1") !== "0",
+    faucetPaceMs: num("HB_FAUCET_PACE_MS", 60_000),
+    faucetMaxWaitMs: num("HB_FAUCET_MAX_WAIT_MS", 1_800_000),
     logDir: str("HB_LOG_DIR", "./logs"),
     stateDir: str("HB_STATE_DIR", "./state"),
     logMaxBytes: num("HB_LOG_MAX_BYTES", 5_000_000),

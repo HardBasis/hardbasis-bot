@@ -61,7 +61,10 @@ pnpm start -- --once # a single full pass (bootstrap → coverage → probes →
 - **Keeps `cancel-all-after` armed** and refreshed, and **deliberately lets it fire once**
   to prove the dead-man's-switch works in production.
 - **Runs a withdrawal check** over the Spark rail (a tiny self-send that settles to
-  `paid`), using a separate `withdraw`-scoped key.
+  `paid`), using a separate `withdraw`-scoped key. Over a long soak it also
+  **deliberately accumulates past the first-seen confirmation threshold** (drawing
+  the faucet on its rate limit) and exercises the `428 confirmation_required`
+  flow end to end — tokenless-refuse, then confirm-and-settle.
 - **Covers every public endpoint** over REST and WebSocket, walking every cursor to
   exhaustion.
 - **Asserts eight invariant families continuously** (below). Each violation is a structured

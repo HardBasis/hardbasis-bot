@@ -83,6 +83,7 @@ export async function ensureBootstrapped(
     signups: 1,
     faucetDraws: 1,
     deadmanFired: false,
+    confirmExercised: false,
   };
   store.save(state);
   log.info("bootstrap complete; state persisted (0600)", { stateExists: store.exists() });

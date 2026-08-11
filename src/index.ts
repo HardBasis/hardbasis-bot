@@ -19,6 +19,7 @@ import { Strategy } from "./strategy.ts";
 import { Coverage } from "./coverage.ts";
 import { runErrorProbes, probeRateLimit } from "./errorprobe.ts";
 import { withdrawalCheck } from "./withdrawal.ts";
+import { exerciseConfirmationFlow } from "./confirm.ts";
 import { WsClient } from "./ws.ts";
 import { emitSummary } from "./summary.ts";
 import { firstNonMonotonic, dedupAcrossReconnect } from "./invariants.ts";
@@ -119,8 +120,13 @@ async function main(): Promise<void> {
   if (rl) log.info("rate-limit probe", { matched: rl.matched, code: rl.actual });
   await strategy.armDeadman(); // re-arm after the burst
 
-  // Phase 9 — withdrawal check.
-  await withdrawalCheck(api, state, log);
+  // Phase 9 — withdrawal path. In the short smoke this is a small self-send
+  // settle (fast). In the long soak it is DEFERRED to the confirmation-flow
+  // exercise below, which must run first: it needs the rail address still
+  // first-seen, which a small settle would consume.
+  if (cfg.once) {
+    await withdrawalCheck(api, state, log);
+  }
 
   emitSummary(http, log, 0n, { phase: "startup-complete", accountSeqsSeen: accountSeqs.length });
 
@@ -132,8 +138,9 @@ async function main(): Promise<void> {
     return;
   }
 
-  // Unattended forever: trading loop + periodic summary + periodic withdrawal.
-  runLoopForever(strategy, api, state, http, log, cfg, ws);
+  // Unattended forever: trading loop + periodic summary + withdrawal path
+  // (confirmation-flow exercise first, then periodic small settles).
+  runLoopForever(strategy, api, state, store, http, log, cfg, ws);
 }
 
 async function runTicks(strategy: Strategy, log: Logger, tickMs: number, n: number): Promise<void> {
@@ -147,6 +154,7 @@ function runLoopForever(
   strategy: Strategy,
   api: Api,
   state: import("./state.ts").BotState,
+  store: import("./state.ts").Store,
   http: HttpClient,
   log: Logger,
   cfg: import("./config.ts").Config,
@@ -154,7 +162,20 @@ function runLoopForever(
 ): void {
   const tick = setInterval(() => void strategy.tick().catch((e) => log.warn("tick error", { err: String(e) })), cfg.tickMs);
   const summary = setInterval(() => emitSummary(http, log, 0n, { phase: "periodic" }), 6 * 3600 * 1000);
-  const withdraw = setInterval(() => void withdrawalCheck(api, state, log).catch((e) => log.warn("withdrawal check error", { err: String(e) })), 12 * 3600 * 1000);
+  // Deliberately accumulate past the confirm threshold and exercise the 428
+  // first-seen confirmation flow end to end — a one-shot, detached (it can take
+  // hours). Must complete before any small settle consumes the first-seen rail.
+  if (cfg.exerciseConfirm && !state.confirmExercised) {
+    void exerciseConfirmationFlow(api, state, store, cfg, log).catch((e) =>
+      log.warn("confirmation exercise error", { err: String(e) }),
+    );
+  }
+  const withdraw = setInterval(() => {
+    // hold the periodic small settle until the confirmation flow has run (so it
+    // does not consume the rail address's first-seen status first).
+    if (cfg.exerciseConfirm && !state.confirmExercised) return;
+    void withdrawalCheck(api, state, log).catch((e) => log.warn("withdrawal check error", { err: String(e) }));
+  }, 12 * 3600 * 1000);
   const shutdown = (sig: string) => {
     log.info("shutting down", { sig });
     clearInterval(tick);

@@ -26,6 +26,8 @@ export interface BotState {
   faucetDraws: number;
   /** whether the deliberate dead-man's-switch fire has been done this install */
   deadmanFired: boolean;
+  /** whether the first-seen 428 confirmation flow has been exercised this install */
+  confirmExercised?: boolean;
 }
 
 export class Store {
