@@ -121,6 +121,21 @@ export interface OrderRef {
   reason: string | null;
 }
 
+/** A resting/armed conditional order as GET /v1/orders?state=… returns it.
+ * `ocoGroup` is the bracket id for a bracket's protective legs and null for a
+ * standalone trigger — the only field that tells the two apart. */
+export interface TriggerSummary {
+  orderId: string;
+  marketId: string;
+  kind: "entry" | "stop" | "take_profit";
+  side: "buy" | "sell";
+  contracts: string;
+  reduceOnly: boolean;
+  status: string;
+  reason: string | null;
+  ocoGroup: string | null;
+}
+
 export interface PlaceOrderBody {
   marketId: string;
   side: "buy" | "sell";

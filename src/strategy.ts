@@ -14,11 +14,15 @@ import type { Config } from "./config.ts";
 import type { Logger } from "./logger.ts";
 import type { BotState } from "./state.ts";
 import type { Store } from "./state.ts";
-import type { PlaceOrderBody, PublicMarket, Position } from "./types.ts";
+import type { PlaceOrderBody, PublicMarket, Position, TriggerSummary } from "./types.ts";
 import { decideOrder } from "./sizing.ts";
 import { initSignal, step, type SignalState, type Target } from "./signal.ts";
 import { scanForFloatMoney } from "./invariants.ts";
 import { Q8 } from "./money.ts";
+
+/** Bracket legs cancelled per cycle. Two are created per exercise, so anything
+ * above 2 drains a backlog while staying gentle on the A4 velocity limits. */
+const LEG_SWEEP_MAX = 8;
 
 interface TurnoverEntry {
   tsMs: number;
@@ -191,7 +195,65 @@ export class Strategy {
       if (c.ok) this.restingIds.delete(id);
     }
     if (placed[0]) this.restingIds.add(placed[0]);
-    this.log.info("exercised conditional-order surface", { placed: placed.length });
+    // …but cancelling the bracket's ENTRY id does not reach its protective
+    // legs, so sweep those explicitly. Without this the exercise leaks two
+    // resting triggers on every cycle, permanently.
+    const swept = await this.sweepBracketLegs();
+    this.log.info("exercised conditional-order surface", {
+      placed: placed.length,
+      legsSwept: swept,
+    });
+  }
+
+  /**
+   * Close-and-cancel hygiene for the bracket's protective legs.
+   *
+   * `exerciseConditionals` places a MARKET-entry bracket. The entry fills on the
+   * next verified print, which ACTIVATES a stop and a take-profit (spec B2), and
+   * cancelling the entry order id afterwards is a no-op for them — a bracket
+   * cancel only tears down a bracket whose entry has not filled yet. The legs
+   * then rest until the position closes, and this bot never closes its position.
+   *
+   * Two legs per cycle, forever: that is how testnet reached 51,734 resting
+   * triggers on one market against a 20-per-market cap, and pinned the engine's
+   * event loop reloading them on every print
+   * (hardbasis-perp docs/requests/PERF-TRIAGE-2026-08-19.md). The venue now
+   * enforces the cap at placement, so an un-swept fleet stops trading
+   * altogether — the leak became a self-inflicted outage.
+   *
+   * A bracket leg is exactly a resting trigger carrying an `ocoGroup`; a
+   * standalone stop/take-profit has none. That distinction is what lets this
+   * sweep run without touching the trigger `exerciseConditionals` deliberately
+   * keeps resting for the dead-man's-switch drill — which is also reduce-only,
+   * so reduceOnly alone would not do.
+   *
+   * Bounded per cycle: cancels are order traffic under the venue's velocity
+   * limits (spec A4), and a large backlog should drain over several cycles
+   * rather than burst.
+   */
+  private async sweepBracketLegs(): Promise<number> {
+    const r = await this.api.orders(this.state.tradeKey, {
+      state: "resting",
+      limit: String(LEG_SWEEP_MAX * 2),
+    });
+    if (!r.ok) {
+      this.log.debug("leg sweep: could not list resting triggers", { status: r.status });
+      return 0;
+    }
+    const triggers = (r.body as unknown as { triggers?: TriggerSummary[] }).triggers ?? [];
+    let cancelled = 0;
+    for (const t of triggers) {
+      if (t.ocoGroup === null) continue; // standalone — not ours to sweep
+      if (cancelled >= LEG_SWEEP_MAX) break;
+      const c = await this.api.cancelOrder(this.state.tradeKey, t.orderId);
+      if (c.ok) {
+        this.restingIds.delete(t.orderId);
+        cancelled++;
+      } else {
+        this.log.debug("leg sweep: cancel refused", { code: c.code, status: c.status });
+      }
+    }
+    return cancelled;
   }
 
   private async scanFills(): Promise<void> {
