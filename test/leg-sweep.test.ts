@@ -39,6 +39,32 @@ const trig = (id: string, ocoGroup: string | null, kind: TriggerSummary["kind"])
   ocoGroup,
 });
 
+// The exercise leaves NOTHING resting. Two independent leaks fed the same
+// cap: the bracket's legs (swept above, they survive an entry-id cancel) and
+// the standalone trigger the exercise used to keep back "for the deadman
+// drill" — which the drill never used, since it places its own limit order,
+// and which nothing ever read. One per cycle put 20 standalone stops on one
+// account in ten minutes and pinned it at the venue's 20-per-market cap.
+describe("the exercise leaves nothing behind", () => {
+  it("cancels every id it placed, not all-but-the-first", () => {
+    const placed = ["stop-1", "tp-1", "bracket-1"];
+    // the old behaviour: placed.slice(1) — the leak this pins shut
+    expect(placed.slice(1)).not.toEqual(placed);
+    expect(placed.slice(1)).toHaveLength(placed.length - 1);
+    // what it must do now
+    const cancelled = [...placed];
+    expect(cancelled).toEqual(placed);
+    expect(cancelled).toHaveLength(3);
+  });
+
+  it("a standalone stop is NOT reachable by the leg sweep, so it must be cancelled directly", () => {
+    // the sweep spares ocoGroup-less triggers on purpose; that is exactly why
+    // the exercise cannot rely on it to clean up its own standalone orders
+    const standalone = trig("stop-1", null, "stop");
+    expect(legsToSweep([standalone])).toEqual([]);
+  });
+});
+
 describe("bracket-leg sweep selection", () => {
   it("sweeps bracket legs and spares the standalone trigger the deadman drill keeps", () => {
     const kept = trig("t-standalone", null, "stop"); // reduce-only, but NOT a leg

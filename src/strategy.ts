@@ -2,7 +2,7 @@
  * The trading loop. A small oscillating position on the venue's first market,
  * driven by the oracle-stream signal, sized under self-enforced caps. It also:
  *  - exercises the conditional-order surface (stop / take-profit / bracket) and
- *    cancels most of them,
+ *    cancels ALL of them again (the probe must not leave a resting set behind),
  *  - keeps cancel-all-after armed and refreshed, and deliberately lets it fire
  *    once per install to prove the dead-man's-switch in production (#7),
  *  - runs the precision scan (#3) over every order/fill it sees.
@@ -34,7 +34,6 @@ export class Strategy {
   private turnover: TurnoverEntry[] = [];
   private ticks = 0;
   private market!: PublicMarket;
-  private restingIds = new Set<string>();
 
   constructor(
     private api: Api,
@@ -189,15 +188,19 @@ export class Strategy {
     if (b.ok) placed.push(b.body.orderId);
     else this.log.debug("bracket refused", { code: b.code, status: b.status });
 
-    // Cancel most of what we placed (keep one resting for the deadman drill).
-    for (const id of placed.slice(1)) {
-      const c = await this.api.cancelOrder(this.state.tradeKey, id);
-      if (c.ok) this.restingIds.delete(id);
+    // Cancel ALL of it. This used to keep placed[0] resting "for the deadman
+    // drill", but the drill places its own limit order and nothing ever read
+    // the set it was kept in — so the only effect was one more resting trigger
+    // per cycle, forever. That is a second leak alongside the bracket legs: it
+    // put 20 standalone stops on one account inside ten minutes and pinned it
+    // at the venue's 20-per-market cap, which then rejected every ticket.
+    // A surface probe must leave the surface as it found it.
+    for (const id of placed) {
+      await this.api.cancelOrder(this.state.tradeKey, id);
     }
-    if (placed[0]) this.restingIds.add(placed[0]);
-    // …but cancelling the bracket's ENTRY id does not reach its protective
+    // …and cancelling the bracket's ENTRY id does not reach its protective
     // legs, so sweep those explicitly. Without this the exercise leaks two
-    // resting triggers on every cycle, permanently.
+    // more resting triggers on every cycle, permanently.
     const swept = await this.sweepBracketLegs();
     this.log.info("exercised conditional-order surface", {
       placed: placed.length,
@@ -247,7 +250,6 @@ export class Strategy {
       if (cancelled >= LEG_SWEEP_MAX) break;
       const c = await this.api.cancelOrder(this.state.tradeKey, t.orderId);
       if (c.ok) {
-        this.restingIds.delete(t.orderId);
         cancelled++;
       } else {
         this.log.debug("leg sweep: cancel refused", { code: c.code, status: c.status });
