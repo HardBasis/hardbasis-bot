@@ -67,6 +67,9 @@ export interface LoggerOpts {
   maxFiles: number;
   alertWebhookUrl?: string;
   alertNtfyUrl?: string;
+  /** stamped onto every line, finding, and alert (e.g. {instance, role, slot}),
+   *  so a fleet's interleaved logs and pushed alerts are attributable. */
+  base?: Record<string, unknown>;
   /** injectable clock so tests are deterministic; defaults to Date.now */
   now?: () => number;
 }
@@ -76,14 +79,16 @@ export class Logger {
   private findingsSink: RotatingSink;
   readonly findings: Finding[] = [];
   private now: () => number;
+  private base: Record<string, unknown>;
   constructor(private opts: LoggerOpts) {
     this.activity = new RotatingSink(opts.logDir, "activity.log", opts.maxBytes, opts.maxFiles);
     this.findingsSink = new RotatingSink(opts.logDir, "findings.log", opts.maxBytes, opts.maxFiles);
     this.now = opts.now ?? Date.now;
+    this.base = opts.base ?? {};
   }
 
   private emit(level: Level, msg: string, fields?: Record<string, unknown>): string {
-    const rec = { ts: new Date(this.now()).toISOString(), level, msg, ...(fields ?? {}) };
+    const rec = { ts: new Date(this.now()).toISOString(), ...this.base, level, msg, ...(fields ?? {}) };
     // BigInt is not JSON-serialisable by default; render it as a decimal string
     // (the same shape it has on the wire) rather than crash the logger.
     const line = JSON.stringify(rec, (_k, v) => (typeof v === "bigint" ? v.toString() : v));
@@ -109,7 +114,7 @@ export class Logger {
   /** Record a finding: append to findings.log, count it, and fire an ALERT. */
   finding(f: Finding): void {
     this.findings.push(f);
-    const rec = { ts: new Date(this.now()).toISOString(), ...f };
+    const rec = { ts: new Date(this.now()).toISOString(), ...this.base, ...f };
     const line = JSON.stringify(rec, (_k, v) => (typeof v === "bigint" ? v.toString() : v));
     this.findingsSink.write(line);
     this.alert(`FINDING ${f.kind}: ${f.summary}`, { finding: f });
@@ -122,13 +127,17 @@ export class Logger {
   }
 
   private async push(msg: string): Promise<void> {
+    // Prefix the pushed alert with instance/role so a fleet's escaped alerts say
+    // WHICH bot fired — an unwatched VM alert is useless if it's anonymous.
+    const tag = [this.base.instance, this.base.role].filter(Boolean).join("/");
+    const tagged = tag ? `[${tag}] ${msg}` : msg;
     const jobs: Array<Promise<unknown>> = [];
     if (this.opts.alertWebhookUrl) {
       jobs.push(
         fetch(this.opts.alertWebhookUrl, {
           method: "POST",
           headers: { "content-type": "application/json" },
-          body: JSON.stringify({ text: msg, source: "hardbasis-bot" }),
+          body: JSON.stringify({ text: tagged, source: "hardbasis-bot", instance: this.base.instance ?? null, role: this.base.role ?? null }),
         }).catch(() => undefined),
       );
     }
@@ -136,8 +145,8 @@ export class Logger {
       jobs.push(
         fetch(this.opts.alertNtfyUrl, {
           method: "POST",
-          headers: { title: "hardbasis-bot", priority: "high" },
-          body: msg,
+          headers: { title: `hardbasis-bot${tag ? " " + tag : ""}`, priority: "high" },
+          body: tagged,
         }).catch(() => undefined),
       );
     }

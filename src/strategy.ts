@@ -10,13 +10,14 @@
  * Coverage and endurance, not alpha (per the request).
  */
 import type { Api } from "./api.ts";
-import type { Config } from "./config.ts";
+import type { Config, Role } from "./config.ts";
 import type { Logger } from "./logger.ts";
 import type { BotState } from "./state.ts";
 import type { Store } from "./state.ts";
 import type { PlaceOrderBody, PublicMarket, Position, TriggerSummary } from "./types.ts";
 import { decideOrder } from "./sizing.ts";
 import { initSignal, step, type SignalState, type Target } from "./signal.ts";
+import { oscTarget, type Profile } from "./decorrelate.ts";
 import { scanForFloatMoney } from "./invariants.ts";
 import { Q8 } from "./money.ts";
 
@@ -42,7 +43,28 @@ export class Strategy {
     private store: Store,
     private log: Logger,
     private now: () => number = Date.now,
+    /** auditor keeps the price-EMA signal; trader runs the decorrelated
+     *  time oscillator built from its profile. */
+    private role: Role = "auditor",
+    private profile?: Profile,
   ) {}
+
+  /** Order size for this instance: a trader's jittered profile size, else cfg. */
+  private orderContracts(): bigint {
+    return this.role === "trader" && this.profile ? this.profile.orderContracts : this.cfg.orderContracts;
+  }
+
+  /**
+   * The long/short/flat target this tick. Auditor: the price-driven EMA signal
+   * (a plausible person's oscillator). Trader: a per-instance phase-shifted time
+   * oscillator, so a fleet is two-sided and never flips in unison. Returns null
+   * only when the auditor has not yet seen an oracle mid.
+   */
+  private currentTarget(): Target | null {
+    if (this.role === "trader" && this.profile) return oscTarget(this.now(), this.profile);
+    if (this.signal.emaQ8 === null) return null;
+    return this.signal.target as Target;
+  }
 
   async init(): Promise<void> {
     const r = await this.api.markets();
@@ -90,7 +112,8 @@ export class Strategy {
   /** One trading step. */
   async tick(): Promise<void> {
     this.ticks++;
-    if (this.signal.emaQ8 === null) {
+    const target = this.currentTarget();
+    if (target === null) {
       this.log.debug("no oracle mid yet; skipping tick");
       return;
     }
@@ -98,25 +121,27 @@ export class Strategy {
 
     const position = await this.signedPosition();
     const decision = decideOrder({
-      target: this.signal.target as Target,
+      target,
       positionContracts: position,
-      orderContracts: this.cfg.orderContracts,
+      orderContracts: this.orderContracts(),
       maxPositionContracts: this.cfg.maxPositionContracts,
       turnoverContracts: this.turnoverContracts(),
       maxDailyTurnoverContracts: this.cfg.maxDailyTurnoverContracts,
       minOrderContracts: big(this.market.minOrderContracts, 1n),
-      maxOrderContracts: big(this.market.maxOrderContracts, this.cfg.orderContracts),
+      maxOrderContracts: big(this.market.maxOrderContracts, this.orderContracts()),
     });
 
     if (decision.side) {
       await this.placeMarket(decision.side, decision.contracts, position);
     } else {
-      this.log.debug("no order this tick", { reason: decision.reason, target: this.signal.target, position: position.toString() });
+      this.log.debug("no order this tick", { reason: decision.reason, target, position: position.toString() });
     }
 
-    // Every ~8th tick, exercise the conditional-order surface and cancel most.
-    if (this.ticks % 8 === 0) await this.exerciseConditionals();
-    // Every ~5th tick, scan a page of fills for precision.
+    // The conditional-order surface (stop/take-profit/bracket) is AUDIT coverage,
+    // not trading — only the auditor exercises it; traders stay lean (trade + WS).
+    if (this.role === "auditor" && this.ticks % 8 === 0) await this.exerciseConditionals();
+    // Every ~5th tick, scan a page of fills for precision (cheap; both roles —
+    // the precision invariant is the highest-value continuous assertion).
     if (this.ticks % 5 === 0) await this.scanFills();
   }
 

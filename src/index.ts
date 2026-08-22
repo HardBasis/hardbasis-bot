@@ -23,6 +23,9 @@ import { exerciseConfirmationFlow } from "./confirm.ts";
 import { WsClient } from "./ws.ts";
 import { emitSummary } from "./summary.ts";
 import { firstNonMonotonic, dedupAcrossReconnect } from "./invariants.ts";
+import { claimSlot } from "./instance.ts";
+import { deriveProfile, type Profile } from "./decorrelate.ts";
+import { Q9 } from "./money.ts";
 
 async function main(): Promise<void> {
   const cfg = loadConfig();
@@ -30,10 +33,40 @@ async function main(): Promise<void> {
     logDir: cfg.logDir,
     maxBytes: cfg.logMaxBytes,
     maxFiles: cfg.logMaxFiles,
+    base: { instance: cfg.instanceId, role: cfg.role },
     ...(cfg.alertWebhookUrl ? { alertWebhookUrl: cfg.alertWebhookUrl } : {}),
     ...(cfg.alertNtfyUrl ? { alertNtfyUrl: cfg.alertNtfyUrl } : {}),
   });
-  log.info("hardbasis-bot starting", { baseUrl: cfg.baseUrl, once: cfg.once });
+  log.info("hardbasis-bot starting", { baseUrl: cfg.baseUrl, once: cfg.once, role: cfg.role, instance: cfg.instanceId });
+
+  // Traders claim a decorrelation slot from the shared volume — an atomic
+  // ordinal that seeds a distinct stance/phase/period/size and a signup stagger,
+  // so `--scale trader=N` is N cooperating bots, not N identical ones.
+  let profile: Profile | undefined;
+  let staggerMs = 0;
+  if (cfg.role === "trader") {
+    const claim = claimSlot(cfg.slotsDir, cfg.maxSlots, cfg.instanceId);
+    if (claim.exhausted) {
+      log.warn("all decorrelation slots taken; running with the fallback profile", { maxSlots: cfg.maxSlots });
+    }
+    profile = deriveProfile(
+      claim.slot,
+      { periodMs: cfg.signalPeriodMs, orderContracts: cfg.orderContracts, bandQ9: cfg.oscBandQ9, staggerStepMs: cfg.signupStaggerMs, jitterPct: cfg.jitterPct },
+      {
+        ...(cfg.stanceOverride ? { stance: cfg.stanceOverride } : {}),
+        ...(cfg.phaseOffsetMs !== undefined ? { phaseFracQ9: phaseFrac(cfg.phaseOffsetMs, cfg.signalPeriodMs) } : {}),
+      },
+    );
+    staggerMs = profile.staggerMs;
+    log.info("decorrelated trader profile", {
+      slot: profile.slot,
+      stance: profile.stance,
+      periodMs: profile.periodMs.toString(),
+      phaseFracQ9: profile.phaseFracQ9.toString(),
+      orderContracts: profile.orderContracts.toString(),
+      staggerMs: profile.staggerMs,
+    });
+  }
 
   // Deliberate alert self-test (HB_ALERT_SELFTEST=1): fire ONE ALERT at startup
   // so an operator can prove invariant-violation alerts escape the box before
@@ -60,12 +93,13 @@ async function main(): Promise<void> {
   }
   log.info("deployment verified", { deployment });
 
-  // Phase 2 — self-bootstrap.
+  // Phase 2 — self-bootstrap (staggered for traders so a scaled fleet does not
+  // sign up in unison and trip the per-IP signup throttle).
   const store = new Store(cfg.stateDir);
-  const state = await ensureBootstrapped(api, store, cfg, log, deployment);
+  const state = await ensureBootstrapped(api, store, cfg, log, deployment, Date.now, staggerMs);
 
   // Phase 3 — strategy + socket.
-  const strategy = new Strategy(api, cfg, state, store, log);
+  const strategy = new Strategy(api, cfg, state, store, log, Date.now, cfg.role, profile);
   await strategy.init();
 
   const accountSeqs: bigint[] = [];
@@ -96,8 +130,30 @@ async function main(): Promise<void> {
   ws.subscribe("stats", { marketId: strategy.marketId() });
   ws.subscribe("account");
 
-  // Wait briefly for the first oracle mid so the signal has something to say.
-  await waitFor(() => ws.lastMidQ8 !== null, 20_000);
+  // Wait briefly for the first oracle mid. The auditor's signal needs it; a
+  // trader's oscillator does not, but the frame proves the socket is live.
+  await waitFor(() => ws.lastMidQ8 !== null, 20_000).catch(() => log.warn("no oracle mid within 20s; continuing"));
+
+  // A trader is trade + WebSocket only: NO coverage sweep, NO error probes, NO
+  // deadman/reconnect/rate-limit drills, NO confirmation/withdrawal exercise.
+  // Those are auditor duties; N traders re-running them would burn one shared
+  // per-IP budget on redundant sweeps. A trader arms its dead-man's-switch (a
+  // safety, not an assertion), warms up, and enters the loop.
+  if (cfg.role === "trader") {
+    await strategy.armDeadman();
+    await runTicks(strategy, log, cfg.tickMs, cfg.once ? 4 : 3);
+    emitSummary(http, log, 0n, { phase: "startup-complete", role: "trader", accountSeqsSeen: accountSeqs.length });
+    if (cfg.once) {
+      log.info("trader smoke pass complete; shutting down", { findings: log.findings.length });
+      ws.close();
+      await new Promise((r) => setTimeout(r, 500));
+      return;
+    }
+    runLoopForever(strategy, api, state, store, http, log, cfg, ws);
+    return;
+  }
+
+  // ── Auditor (the single reference instance): full coverage + all probes ──
 
   // Phase 4 — coverage + error probes (once).
   const coverage = new Coverage(api, state, log);
@@ -170,25 +226,32 @@ function runLoopForever(
 ): void {
   const tick = setInterval(() => void strategy.tick().catch((e) => log.warn("tick error", { err: String(e) })), cfg.tickMs);
   const summary = setInterval(() => emitSummary(http, log, 0n, { phase: "periodic" }), 6 * 3600 * 1000);
-  // Deliberately accumulate past the confirm threshold and exercise the 428
-  // first-seen confirmation flow end to end — a one-shot, detached (it can take
-  // hours). Must complete before any small settle consumes the first-seen rail.
-  if (cfg.exerciseConfirm && !state.confirmExercised) {
-    void exerciseConfirmationFlow(api, state, store, cfg, log).catch((e) =>
-      log.warn("confirmation exercise error", { err: String(e) }),
-    );
+  // The confirmation-flow exercise and the periodic withdrawal settle are the
+  // auditor's alone — they hammer the faucet toward the first-seen threshold and
+  // exercise the rail. N traders doing this would multiply faucet/withdraw load
+  // for no extra coverage, so traders skip both.
+  let withdraw: ReturnType<typeof setInterval> | undefined;
+  if (cfg.role === "auditor") {
+    // Deliberately accumulate past the confirm threshold and exercise the 428
+    // first-seen confirmation flow end to end — a one-shot, detached (it can take
+    // hours). Must complete before any small settle consumes the first-seen rail.
+    if (cfg.exerciseConfirm && !state.confirmExercised) {
+      void exerciseConfirmationFlow(api, state, store, cfg, log).catch((e) =>
+        log.warn("confirmation exercise error", { err: String(e) }),
+      );
+    }
+    withdraw = setInterval(() => {
+      // hold the periodic small settle until the confirmation flow has run (so it
+      // does not consume the rail address's first-seen status first).
+      if (cfg.exerciseConfirm && !state.confirmExercised) return;
+      void withdrawalCheck(api, state, log).catch((e) => log.warn("withdrawal check error", { err: String(e) }));
+    }, 12 * 3600 * 1000);
   }
-  const withdraw = setInterval(() => {
-    // hold the periodic small settle until the confirmation flow has run (so it
-    // does not consume the rail address's first-seen status first).
-    if (cfg.exerciseConfirm && !state.confirmExercised) return;
-    void withdrawalCheck(api, state, log).catch((e) => log.warn("withdrawal check error", { err: String(e) }));
-  }, 12 * 3600 * 1000);
   const shutdown = (sig: string) => {
     log.info("shutting down", { sig });
     clearInterval(tick);
     clearInterval(summary);
-    clearInterval(withdraw);
+    if (withdraw) clearInterval(withdraw);
     emitSummary(http, log, 0n, { phase: "shutdown" });
     ws.close();
     setTimeout(() => process.exit(0), 500);
@@ -228,6 +291,13 @@ async function reconnectDrill(
   } else {
     log.info("reconnect drill clean", { historySeqs: historySeqs.length, liveAfter: liveAfter.length });
   }
+}
+
+/** HB_PHASE_OFFSET_MS → a phase fraction in q9 of the (base) period. */
+function phaseFrac(offsetMs: bigint, periodMs: bigint): bigint {
+  if (periodMs <= 0n) return 0n;
+  const m = ((offsetMs % periodMs) + periodMs) % periodMs;
+  return (m * Q9) / periodMs;
 }
 
 function waitFor(cond: () => boolean, timeoutMs: number): Promise<void> {

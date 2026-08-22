@@ -20,6 +20,10 @@ export async function ensureBootstrapped(
   log: Logger,
   deployment: string,
   now: () => number = Date.now,
+  /** delay before a FRESH signup so a scaled fleet does not sign up in unison
+   *  and trip the gateway's per-IP signup throttle. Zero on restart (state
+   *  exists) and for the single auditor. */
+  staggerMs = 0,
 ): Promise<BotState> {
   const existing = store.load();
   if (existing) {
@@ -34,6 +38,11 @@ export async function ensureBootstrapped(
   log.info("no stored state — self-bootstrapping a fresh account");
 
   if (cfg.maxSignups < 1) throw new Error("HB_MAX_SIGNUPS is 0 but no state exists; cannot bootstrap");
+
+  if (staggerMs > 0) {
+    log.info("staggering signup to spread fleet load off the per-IP throttle", { staggerMs });
+    await new Promise((r) => setTimeout(r, staggerMs));
+  }
 
   // 1. Sign up → full-scope master key (shown once).
   const signup = await api.signup();

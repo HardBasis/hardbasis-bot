@@ -46,6 +46,48 @@ pnpm start           # unattended loop
 pnpm start -- --once # a single full pass (bootstrap → coverage → probes → drills), then exit
 ```
 
+### Running a fleet (multiple instances)
+
+The bot has two **roles**:
+
+- **`auditor`** — the reference/soak instance. Full endpoint coverage, cursor
+  walks to exhaustion, error-code probes, all eight invariant families, and the
+  confirmation/withdrawal exercise. Run **exactly one**: the gateway's per-IP
+  rate limits apply to your whole host, so N auditors would burn one shared
+  budget on redundant sweeps and produce proxy `429`s rather than real findings.
+- **`trader`** — trade + WebSocket only, minimal REST polling. Adds decorrelated,
+  two-sided order flow. **Scale it freely:**
+
+```bash
+docker compose up -d --scale trader=3   # 1 auditor + 3 traders
+```
+
+Each trader claims an atomic **slot** (0, 1, 2, …) from the shared state volume
+and derives a **distinct personality** from it — so a fleet is genuinely
+different bots, not N copies flipping in unison:
+
+| knob             | how it decorrelates                                                        |
+| ---------------- | -------------------------------------------------------------------------- |
+| **stance**       | slot parity — even = momentum (follow), odd = mean-revert (fade). Slot 0 and slot 1 lean **opposite**, so flow is two-sided by construction. |
+| **phase**        | a golden-ratio spread across the cycle, so two traders never flip at the same instant. |
+| **period**       | jittered ±`HB_JITTER_PCT` off `HB_SIGNAL_PERIOD_MS` — reaction speeds differ. |
+| **size**         | jittered the same way off `HB_ORDER_CONTRACTS`.                            |
+| **signup stagger** | slot·`HB_SIGNUP_STAGGER_MS`, so a scaled fleet doesn't sign up in unison and trip the per-IP signup throttle. |
+
+Every instance self-bootstraps its **own** account into a per-instance
+subdirectory of the state volume (`state/<instance>/bot.state.json`, mode
+`0600`), and **every log line, finding, and alert is tagged with the instance
+id and role**, so a fleet's interleaved logs and pushed alerts stay attributable.
+
+Each container is **memory-capped** (`mem_limit`: 192 MB per trader, 256 MB for
+the auditor) so one leaking instance cannot OOM the box. (192, not 128: a
+tsx/Node bot's steady-state RSS is ~110–115 MB and creeps under GC — 128 MB
+leaves too little headroom.)
+
+For an explicitly-configured fleet of *distinct services* (rather than
+`--scale`), pin `HB_STANCE` / `HB_PHASE_OFFSET_MS` per service; under `--scale`
+leave them unset and the slot derives them.
+
 ---
 
 ## What it does
@@ -98,6 +140,11 @@ is `HB_BASE_URL` (already defaulted to testnet). Highlights:
 | variable                          | default                          | meaning                                             |
 | --------------------------------- | -------------------------------- | --------------------------------------------------- |
 | `HB_BASE_URL`                     | `https://testnet.hardbasis.com`  | gateway base URL                                    |
+| `HB_ROLE`                         | `auditor`                        | `auditor` (full coverage) or `trader` (trade + WS)  |
+| `HB_INSTANCE_ID`                  | *(hostname)*                     | stable per-instance label; keys state/log dirs, tags logs |
+| `HB_SIGNAL_PERIOD_MS`             | `600000`                         | trader oscillation period (base; jittered per slot) |
+| `HB_JITTER_PCT`                   | `30`                             | ± percent jitter on trader period/size              |
+| `HB_SIGNUP_STAGGER_MS`            | `30000`                          | per-slot signup stagger (per-IP throttle safety)    |
 | `HB_ALLOW_NON_TESTNET`            | `0`                              | must be `1` to run anywhere `GET /deployment` ≠ testnet |
 | `HB_MAX_POSITION_CONTRACTS`       | `2000`                           | absolute position cap                               |
 | `HB_MAX_DAILY_TURNOVER_CONTRACTS` | `200000`                         | rolling-24h turnover cap                            |

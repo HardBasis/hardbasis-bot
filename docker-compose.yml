@@ -1,23 +1,77 @@
 # One command for a stranger, the same command for us:
 #   git clone … && cd hardbasis-bot && cp .env.example .env && docker compose up -d
 #
-# The bot self-bootstraps its account on first run; state and logs live in named
-# volumes so they survive `up`/`down` (but a real key never lands in the image).
+# Two roles:
+#   auditor — the reference/soak instance: full endpoint coverage, cursor walks
+#             to exhaustion, error-code probes, all eight invariant families, the
+#             confirmation/withdrawal exercise. Exactly ONE (do not scale it):
+#             N auditors would burn one shared per-IP budget on redundant sweeps.
+#   trader  — trade + WebSocket only, minimal REST polling. Scale it freely:
+#               docker compose up -d --scale trader=3
+#             Each replica claims an atomic slot from the shared state volume and
+#             derives a DISTINCT stance/phase/period/size from it, so the fleet is
+#             two-sided by construction (slot 0 momentum, slot 1 mean-revert, …)
+#             and staggers its signups off the per-IP throttle.
+#
+# Each instance self-bootstraps its own account into a per-instance subdirectory
+# of the state volume (mode 0600), so replicas never fight over one key or one
+# account. A real key never lands in the image.
 services:
-  bot:
+  auditor:
     build: .
     image: hardbasis-bot:local
     restart: unless-stopped
     env_file:
       - .env
     environment:
+      HB_ROLE: auditor
+      HB_INSTANCE_ID: auditor # stable id → stable state dir across recreates
       HB_STATE_DIR: /app/state
       HB_LOG_DIR: /app/logs
     volumes:
-      - bot-state:/app/state
-      - bot-logs:/app/logs
-    # Structured JSON to stdout is captured by the json-file driver, size-capped
-    # so a 1 GB droplet can't fill from container logs either.
+      - auditor-state:/app/state
+      - auditor-logs:/app/logs
+    # The auditor walks cursors and posts a 2 MB probe body; give it headroom but
+    # still cap it so one leak can't OOM the box.
+    mem_limit: 256m
+    memswap_limit: 384m
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "5"
+
+  trader:
+    build: .
+    image: hardbasis-bot:local
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      HB_ROLE: trader
+      HB_STATE_DIR: /app/state
+      HB_LOG_DIR: /app/logs
+      # Decorrelation base knobs — each replica jitters these off its slot. Pin
+      # HB_STANCE / HB_PHASE_OFFSET_MS here only if you run distinct services
+      # instead of --scale.
+      HB_SIGNAL_PERIOD_MS: ${HB_SIGNAL_PERIOD_MS:-600000}
+      HB_SIGNUP_STAGGER_MS: ${HB_SIGNUP_STAGGER_MS:-30000}
+      # Traders are trade + WS: no faucet-hammering confirmation exercise, and a
+      # minimal faucet allowance (just enough to trade).
+      HB_EXERCISE_CONFIRM: "0"
+      HB_MAX_FAUCET_DRAWS: ${HB_TRADER_FAUCET_DRAWS:-2}
+    volumes:
+      # Shared across every trader replica: per-instance subdirs keep accounts
+      # apart, and the shared _slots dir is where the atomic ordinal is claimed.
+      - trader-state:/app/state
+      - trader-logs:/app/logs
+    # Hard per-trader cap so a single leaking replica cannot exhaust a 1 GB
+    # droplet. 192 MB, not the 128 MB you might reach for first: a tsx/Node bot's
+    # steady-state RSS is ~110–115 MB and creeps under GC, so 128 MB leaves too
+    # little headroom (measured on the soak VM). Still a real cap — 5 × 192 MB is
+    # the box's RAM, and a leaker is bounded well below the whole machine.
+    mem_limit: 192m
+    memswap_limit: 320m
     logging:
       driver: json-file
       options:
@@ -25,5 +79,7 @@ services:
         max-file: "5"
 
 volumes:
-  bot-state:
-  bot-logs:
+  auditor-state:
+  auditor-logs:
+  trader-state:
+  trader-logs:
