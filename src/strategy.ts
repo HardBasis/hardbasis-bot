@@ -32,6 +32,12 @@ interface TurnoverEntry {
 
 export class Strategy {
   private signal: SignalState = initSignal();
+  /** Latest oracle mid from the ws stream. The signal does NOT advance here:
+   * price frames arrive at whatever rate the venue happens to push (measured
+   * ~2.4/s on testnet), so stepping the EMA per frame made its time constant a
+   * function of venue chattiness — ~14s instead of the intended N ticks. The
+   * mid is parked here and consumed once per tick(). */
+  private lastMidQ8: bigint | null = null;
   private turnover: TurnoverEntry[] = [];
   private ticks = 0;
   private market!: PublicMarket;
@@ -81,9 +87,10 @@ export class Strategy {
     return this.market.oracleFeedId;
   }
 
-  /** Feed the signal from the oracle stream (called by the ws price handler). */
+  /** Record the latest mid from the oracle stream (called by the ws price
+   * handler). Cheap and side-effect free — the signal advances in tick(). */
   onMid(midQ8: bigint): void {
-    this.signal = step(this.signal, midQ8);
+    this.lastMidQ8 = midQ8;
   }
 
   private turnoverContracts(): bigint {
@@ -112,9 +119,21 @@ export class Strategy {
   /** One trading step. */
   async tick(): Promise<void> {
     this.ticks++;
+    if (this.lastMidQ8 === null) {
+      this.log.debug("no oracle mid yet; skipping tick");
+      return;
+    }
+    // Advance the signal exactly once per tick, so the EMA's time constant is
+    // N ticks (32 x tickMs) no matter how fast price frames arrive. This must
+    // run BEFORE currentTarget(), which reads signal.target on the auditor
+    // path. (A trader with a profile takes its target from the time-based
+    // oscillator instead and never consults the EMA, so it was already immune
+    // to the latch this fixes — the auditor was not.)
+    this.signal = step(this.signal, this.lastMidQ8);
+
     const target = this.currentTarget();
     if (target === null) {
-      this.log.debug("no oracle mid yet; skipping tick");
+      this.log.debug("no target yet; skipping tick");
       return;
     }
     await this.armDeadman();
@@ -173,7 +192,7 @@ export class Strategy {
 
   /** Place a stop, a take-profit, and a bracket far from mark, then cancel most. */
   private async exerciseConditionals(): Promise<void> {
-    const mid = this.signal.emaQ8;
+    const mid = this.lastMidQ8;
     if (mid === null) return;
     const far = mid / 5n; // 20% away — will not trigger; pure surface exercise
     const stop = this.alignToTick(mid - far).toString();
@@ -299,7 +318,7 @@ export class Strategy {
     // cancelled. A limit order — NOT a trigger — because a trigger id is not
     // resolvable via GET /v1/orders/{id} (returns not_found; SOAK-FINDINGS), so
     // only a limit order can be polled by id to observe the sweep.
-    const mid = this.signal.emaQ8 ?? BigInt(this.market.lastPrice?.midQ8 ?? Q8.toString());
+    const mid = this.lastMidQ8 ?? BigInt(this.market.lastPrice?.midQ8 ?? Q8.toString());
     const limitPriceQ8 = this.alignToTick(mid / 2n).toString();
     const placed = await this.api.placeOrder(this.state.tradeKey, {
       marketId: this.market.marketId,
