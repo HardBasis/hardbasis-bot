@@ -55,6 +55,8 @@ export interface Config {
   // logging + state (per-instance subdirs derived from instanceId)
   logDir: string;
   stateDir: string;
+  /** root of the shared state volume; slot state dirs hang off it */
+  baseStateDir: string;
   /** shared across a service's replicas; holds the atomic slot locks */
   slotsDir: string;
   logMaxBytes: number;
@@ -130,8 +132,15 @@ export function loadConfig(argv: string[] = process.argv.slice(2)): Config {
     faucetMaxWaitMs: num("HB_FAUCET_MAX_WAIT_MS", 1_800_000),
     // Per-instance subdirs so N replicas on one shared volume never collide on
     // the 0600 state file or a log; _slots is shared so the ordinal claim works.
+    //
+    // logDir stays keyed on the instance id — logs SHOULD follow the container.
+    // stateDir does not: it is resolved from the claimed SLOT once that is
+    // known (see slotStateDir), because state carries the account and an
+    // account must survive a recreate. Keying it on the container id is what
+    // minted six accounts and six faucet grants on 2026-08-19.
     logDir: join(baseLogDir, seg),
     stateDir: join(baseStateDir, seg),
+    baseStateDir,
     slotsDir: join(baseStateDir, "_slots"),
     logMaxBytes: num("HB_LOG_MAX_BYTES", 5_000_000),
     logMaxFiles: num("HB_LOG_MAX_FILES", 5),

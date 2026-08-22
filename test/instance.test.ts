@@ -41,9 +41,9 @@ describe("resolveInstanceId", () => {
 describe("claimSlot", () => {
   it("hands distinct ordinals to distinct instances (no collision)", () => {
     const dir = freshDir();
-    expect(claimSlot(dir, 16, "container-aaa")).toEqual({ slot: 0, exhausted: false });
-    expect(claimSlot(dir, 16, "container-bbb")).toEqual({ slot: 1, exhausted: false });
-    expect(claimSlot(dir, 16, "container-ccc")).toEqual({ slot: 2, exhausted: false });
+    expect(claimSlot(dir, 16, "container-aaa")).toEqual({ slot: 0, exhausted: false, tookOver: false });
+    expect(claimSlot(dir, 16, "container-bbb")).toEqual({ slot: 1, exhausted: false, tookOver: false });
+    expect(claimSlot(dir, 16, "container-ccc")).toEqual({ slot: 2, exhausted: false, tookOver: false });
   });
 
   it("reclaims the same slot for the same instance (restart-stable)", () => {
@@ -61,6 +61,6 @@ describe("claimSlot", () => {
     expect(claimSlot(dir, 2, "a").slot).toBe(0);
     expect(claimSlot(dir, 2, "b").slot).toBe(1);
     const c = claimSlot(dir, 2, "c");
-    expect(c).toEqual({ slot: 2, exhausted: true });
+    expect(c).toEqual({ slot: 2, exhausted: true, tookOver: false });
   });
 });

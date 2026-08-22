@@ -23,7 +23,7 @@ import { exerciseConfirmationFlow } from "./confirm.ts";
 import { WsClient } from "./ws.ts";
 import { emitSummary } from "./summary.ts";
 import { firstNonMonotonic, dedupAcrossReconnect } from "./invariants.ts";
-import { claimSlot } from "./instance.ts";
+import { claimSlot, renewSlot, slotStateDir } from "./instance.ts";
 import { deriveProfile, type Profile } from "./decorrelate.ts";
 import { Q9 } from "./money.ts";
 
@@ -43,11 +43,23 @@ async function main(): Promise<void> {
   // ordinal that seeds a distinct stance/phase/period/size and a signup stagger,
   // so `--scale trader=N` is N cooperating bots, not N identical ones.
   let profile: Profile | undefined;
+  let slotForRenew: number | null = null;
   let staggerMs = 0;
   if (cfg.role === "trader") {
     const claim = claimSlot(cfg.slotsDir, cfg.maxSlots, cfg.instanceId);
     if (claim.exhausted) {
       log.warn("all decorrelation slots taken; running with the fallback profile", { maxSlots: cfg.maxSlots });
+    }
+    // State follows the SLOT, not the container: a recreate takes over a stale
+    // lease and inherits that slot's account instead of bootstrapping a new one.
+    if (!claim.exhausted) {
+      cfg.stateDir = slotStateDir(cfg.baseStateDir, claim.slot);
+      slotForRenew = claim.slot;
+      log.info("claimed decorrelation slot", {
+        slot: claim.slot,
+        tookOver: claim.tookOver,
+        stateDir: cfg.stateDir,
+      });
     }
     profile = deriveProfile(
       claim.slot,
@@ -149,7 +161,7 @@ async function main(): Promise<void> {
       await new Promise((r) => setTimeout(r, 500));
       return;
     }
-    runLoopForever(strategy, api, state, store, http, log, cfg, ws);
+    runLoopForever(strategy, api, state, store, http, log, cfg, ws, slotForRenew);
     return;
   }
 
@@ -204,7 +216,7 @@ async function main(): Promise<void> {
 
   // Unattended forever: trading loop + periodic summary + withdrawal path
   // (confirmation-flow exercise first, then periodic small settles).
-  runLoopForever(strategy, api, state, store, http, log, cfg, ws);
+  runLoopForever(strategy, api, state, store, http, log, cfg, ws, slotForRenew);
 }
 
 async function runTicks(strategy: Strategy, log: Logger, tickMs: number, n: number): Promise<void> {
@@ -223,13 +235,27 @@ function runLoopForever(
   log: Logger,
   cfg: import("./config.ts").Config,
   ws: WsClient,
+  slot: number | null,
 ): void {
   const tick = setInterval(() => void strategy.tick().catch((e) => log.warn("tick error", { err: String(e) })), cfg.tickMs);
+  // Renew the slot lease on the tick. A lease that stops being renewed is what
+  // tells a later recreate this slot is free to inherit; losing it (another
+  // instance took over) is logged, never silent — two bots on one account would
+  // otherwise be invisible.
+  const lease =
+    slot === null
+      ? undefined
+      : setInterval(() => {
+          if (!renewSlot(cfg.slotsDir, slot, cfg.instanceId)) {
+            log.warn("slot lease lost — another instance holds it now", { slot });
+          }
+        }, cfg.tickMs);
   const summary = setInterval(() => emitSummary(http, log, 0n, { phase: "periodic" }), 6 * 3600 * 1000);
   // The confirmation-flow exercise and the periodic withdrawal settle are the
   // auditor's alone — they hammer the faucet toward the first-seen threshold and
   // exercise the rail. N traders doing this would multiply faucet/withdraw load
   // for no extra coverage, so traders skip both.
+  void lease;
   let withdraw: ReturnType<typeof setInterval> | undefined;
   if (cfg.role === "auditor") {
     // Deliberately accumulate past the confirm threshold and exercise the 428
